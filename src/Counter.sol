@@ -6,7 +6,9 @@ contract Counter {
 
     event NumberSet(uint256 newNumber);
 
-    function setNumber(uint256 newNumber) external {
+    function setNumber(
+        uint256 newNumber
+    ) external {
         number = newNumber;
         emit NumberSet(newNumber);
     }

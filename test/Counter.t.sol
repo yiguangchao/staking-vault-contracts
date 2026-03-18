@@ -1,32 +1,34 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.24;
 
-import "remix_tests.sol";
-import {Counter} from "../src/Counter.sol";
+import { Test } from "forge-std/Test.sol";
+import { Counter } from "../src/Counter.sol";
 
-contract CounterTest {
+contract CounterTest is Test {
     Counter internal counter;
 
     function setUp() public {
         counter = new Counter();
     }
 
-    function test_InitialNumberIsZero() public {
-        Assert.equal(counter.number(), 0, "Initial number should be 0");
+    function test_InitialNumberIsZero() public view {
+        assertEq(counter.number(), 0);
     }
 
     function test_SetNumber() public {
         counter.setNumber(7);
-        Assert.equal(counter.number(), 7, "Number should be set to 7");
+        assertEq(counter.number(), 7);
     }
 
     function test_Increment() public {
         counter.increment();
-        Assert.equal(counter.number(), 1, "Number should be 1 after increment");
+        assertEq(counter.number(), 1);
     }
 
-    function testFuzz_SetNumber(uint256 x) public {
+    function testFuzz_SetNumber(
+        uint256 x
+    ) public {
         counter.setNumber(x);
-        Assert.equal(counter.number(), x, "Number should be set to x");
+        assertEq(counter.number(), x);
     }
 }

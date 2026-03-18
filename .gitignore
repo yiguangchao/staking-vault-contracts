@@ -18,3 +18,5 @@ docs/
 foundry.lock
 
 .deps/
+
+.vscode/
