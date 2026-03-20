@@ -7,9 +7,7 @@ import { SimpleBank } from "../src/SimpleBank.sol";
 contract ForceSend {
     constructor() payable { }
 
-    function boom(
-        address payable target
-    ) external {
+    function boom(address payable target) external {
         selfdestruct(target);
     }
 }
@@ -79,15 +77,14 @@ contract SimpleBankTest is Test {
         bank.deposit{ value: 1 ether }();
 
         vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(SimpleBank.InsufficientBalance.selector, 2 ether, 1 ether)
-        );
+        vm.expectRevert(abi.encodeWithSelector(SimpleBank.InsufficientBalance.selector, 2 ether, 1 ether));
         bank.withdraw(2 ether);
     }
 
     function test_AssertInvariantBreaksAfterForcedEther() public {
         ForceSend force = new ForceSend{ value: 1 ether }();
         force.boom(payable(address(bank)));
+
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSignature("Panic(uint256)", 0x01));
         bank.deposit{ value: 1 ether }();
