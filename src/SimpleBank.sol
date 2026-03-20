@@ -19,9 +19,7 @@ contract SimpleBank {
         _deposit(msg.sender, msg.value);
     }
 
-    function withdraw(
-        uint256 amount
-    ) external {
+    function withdraw(uint256 amount) external {
         if (amount == 0) revert ZeroAmount();
 
         uint256 userBalance = balances[msg.sender];
@@ -40,9 +38,7 @@ contract SimpleBank {
         assert(totalTrackedBalance == address(this).balance);
     }
 
-    function balanceOf(
-        address user
-    ) external view returns (uint256) {
+    function balanceOf(address user) external view returns (uint256) {
         return balances[user];
     }
 
@@ -50,10 +46,7 @@ contract SimpleBank {
         return address(this).balance;
     }
 
-    function _deposit(
-        address user,
-        uint256 amount
-    ) internal {
+    function _deposit(address user, uint256 amount) internal {
         if (amount == 0) revert ZeroAmount();
 
         balances[user] += amount;
