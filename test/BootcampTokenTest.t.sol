@@ -78,24 +78,22 @@ contract BootcampTokenTest is Test {
     }
 
     function test_RevertWhen_NonMinterCallsMint() public {
-        vm.prank(alice);
-
         vm.expectRevert(
             abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, alice, token.MINTER_ROLE())
         );
 
+        vm.prank(alice);
         token.mint(bob, 1 ether);
     }
 
     function test_RevertWhen_NonAdminGrantsMinter() public {
-        vm.prank(alice);
-
         vm.expectRevert(
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector, alice, token.DEFAULT_ADMIN_ROLE()
             )
         );
 
+        vm.prank(alice);
         token.grantMinter(bob);
     }
 }
