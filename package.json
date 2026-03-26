@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@walletconnect/ethereum-provider": "^2.23.8"
+  }
+}

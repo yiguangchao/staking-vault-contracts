@@ -6,6 +6,7 @@ import { ReactNode, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 import { RainbowKitProvider } from '@rainbow-me/rainbowkit'
+import { Toaster } from 'sonner'
 
 import { wagmiConfig } from '@/lib/wagmi'
 
@@ -17,6 +18,14 @@ export function Providers({ children }: { children: ReactNode }) {
             <QueryClientProvider client={queryClient}>
                 <RainbowKitProvider>
                     {children}
+                    <Toaster
+                        richColors
+                        position="top-right"
+                        closeButton
+                        toastOptions={{
+                            duration: 4000,
+                        }}
+                    />
                 </RainbowKitProvider>
             </QueryClientProvider>
         </WagmiProvider>
