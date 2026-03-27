@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { formatUnits, parseUnits } from 'viem'
-import { sepolia } from 'wagmi/chains'
+import { TARGET_CHAIN } from '@/lib/wagmi'
 import {
     useAccount,
     useBlockNumber,
@@ -51,7 +51,7 @@ export function StakingDashboard() {
     const [amount, setAmount] = useState('')
     const [newRewardRate, setNewRewardRate] = useState('')
 
-    const isWrongNetwork = isConnected && chain?.id !== sepolia.id
+    const isWrongNetwork = isConnected && chain?.id !== TARGET_CHAIN.id
 
     const { switchChain, isPending: isSwitchingChain } = useSwitchChain()
 
@@ -260,7 +260,7 @@ export function StakingDashboard() {
             abi: bootcampTokenAbi,
             functionName: 'approve',
             args: [VAULT_ADDRESS, amountWei],
-            chainId: sepolia.id,
+            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -272,7 +272,7 @@ export function StakingDashboard() {
             abi: stakingVaultAbi,
             functionName: 'stake',
             args: [amountWei],
-            chainId: sepolia.id,
+            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -284,7 +284,7 @@ export function StakingDashboard() {
             abi: stakingVaultAbi,
             functionName: 'withdraw',
             args: [amountWei],
-            chainId: sepolia.id,
+            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -295,7 +295,7 @@ export function StakingDashboard() {
             address: VAULT_ADDRESS,
             abi: stakingVaultAbi,
             functionName: 'claimRewards',
-            chainId: sepolia.id,
+            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -307,7 +307,7 @@ export function StakingDashboard() {
             abi: stakingVaultAbi,
             functionName: 'setRewardRate',
             args: [rewardRateWei],
-            chainId: sepolia.id,
+            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -318,7 +318,7 @@ export function StakingDashboard() {
             address: VAULT_ADDRESS,
             abi: stakingVaultAbi,
             functionName: 'pause',
-            chainId: sepolia.id,
+            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -329,7 +329,7 @@ export function StakingDashboard() {
             address: VAULT_ADDRESS,
             abi: stakingVaultAbi,
             functionName: 'unpause',
-            chainId: sepolia.id,
+            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -366,15 +366,15 @@ export function StakingDashboard() {
                             <div>
                                 <p className="font-semibold text-amber-200">当前网络不对</p>
                                 <p className="mt-1 text-sm text-amber-100/80">
-                                    这个 dApp 目前只接 Sepolia。请切换到 Sepolia 后再进行读写操作。
+                                    这个 dApp 目前只接 TARGET_CHAIN。请切换到 TARGET_CHAIN 后再进行读写操作。
                                 </p>
                             </div>
                             <button
-                                onClick={() => switchChain({ chainId: sepolia.id })}
+                                onClick={() => switchChain({ chainId: TARGET_CHAIN.id })}
                                 disabled={isSwitchingChain}
                                 className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950 disabled:opacity-50"
                             >
-                                {isSwitchingChain ? '切换中…' : '切到 Sepolia'}
+                                {isSwitchingChain ? '切换中…' : '切到 TARGET_CHAIN'}
                             </button>
                         </div>
                     </section>
