@@ -1,0 +1,12 @@
+{
+  "name": "staking-vault-indexer",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/api.ts",
+    "listener": "tsx src/listener.ts",
+    "sync": "tsx src/sync.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  }
+}
