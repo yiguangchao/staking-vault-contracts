@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model IndexedState {
+  id               Int      @id @default(1)
+  lastSyncedBlock  BigInt
+  updatedAt        DateTime @updatedAt
+}
+
+model VaultEvent {
+  id               String   @id
+  chainId          Int
+  contractAddress  String
+  blockNumber      BigInt
+  blockHash        String
+  transactionHash  String
+  logIndex         Int
+  eventName        String
+  userAddress      String?
+  amount           String?
+  newRewardRate    String?
+  rawData          String
+  createdAt        DateTime @default(now())
+
+  @@index([blockNumber])
+  @@index([transactionHash])
+  @@index([userAddress])
+  @@index([eventName])
+}
+
+model UserPositionSnapshot {
+  id                String   @id
+  userAddress       String   @unique
+  totalStakedIn     String   @default("0")
+  totalWithdrawn    String   @default("0")
+  totalRewardsPaid  String   @default("0")
+  updatedAt         DateTime @updatedAt
+}
