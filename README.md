@@ -1,66 +1,98 @@
-## Foundry
+# Staking Vault dApp
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A full-stack Web3 staking demo project for learning and job preparation.
 
-Foundry consists of:
+## Overview
+This project includes:
+- Smart contracts for staking and reward distribution
+- A frontend dApp for wallet interaction
+- A Node.js indexer for event syncing and query APIs
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Architecture
+- `contracts/`: Solidity contracts and tests
+- `app/`: Next.js frontend
+- `indexer/`: Node.js indexer and API
+- `docs/`: project documentation
 
-## Documentation
+## Features
 
-https://book.getfoundry.sh/
+### User Features
+- Approve staking token
+- Stake tokens
+- Withdraw principal
+- Claim rewards
+- View earned rewards
 
-## Usage
+### Admin Features
+- Set reward rate
+- Pause / unpause
+- Fund reward pool
 
-### Build
+### Indexer Features
+- Sync staking events
+- Query event history
+- Query user summaries
 
-```shell
-$ forge build
+## Tech Stack
+- Solidity
+- Foundry
+- OpenZeppelin
+- TypeScript
+- Node.js
+- Next.js
+- wagmi
+- viem
+- RainbowKit
+- Prisma
+
+## Local Development
+
+### Contracts
+```bash
+cd contracts
+forge build
+forge test
 ```
 
-### Test
-
-```shell
-$ forge test
+### Frontend
+```bash
+cd app
+pnpm install
+pnpm dev
 ```
 
-### Format
-
-```shell
-$ forge fmt
+### Indexer
+```bash
+cd indexer
+pnpm install
+pnpm sync
+pnpm dev
 ```
 
-### Gas Snapshots
+## Environment Variables
 
-```shell
-$ forge snapshot
+### app/.env.local
+```bash
+- NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
+- NEXT_PUBLIC_STAKE_TOKEN_ADDRESS
+- NEXT_PUBLIC_REWARD_TOKEN_ADDRESS
+- NEXT_PUBLIC_VAULT_ADDRESS
 ```
 
-### Anvil
+### indexer/.env
+- DATABASE_URL
+- RPC_URL
+- CHAIN_ID
+- VAULT_ADDRESS
+- START_BLOCK
+- PORT
 
-```shell
-$ anvil
-```
+### Demo
+- Add screenshots here
+- Add Sepolia deployment info here
 
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+### Future Improvements
+- Reward pool exhaustion protection
+- Multi-pool support
+- Fixed reward period
+- Reorg handling in indexer
