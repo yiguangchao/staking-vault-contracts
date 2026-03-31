@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { formatUnits, parseUnits } from 'viem'
 import { TARGET_CHAIN } from '@/lib/wagmi'
+import { UserSummary } from "@/components/user-summary";
+import { HistoryPanel } from "@/components/history-panel";
 import {
     useAccount,
     useBlockNumber,
@@ -35,7 +37,7 @@ function safeFormat(value: bigint | undefined, decimals = 18, maximumFractionDig
 }
 
 function safeParse(value: string, decimals = 18) {
-    if (!value || Number(value) <= 0) return 0n
+    if (!value || Number(value) <= 0) return BigInt(0)
     return parseUnits(value, decimals)
 }
 
@@ -83,7 +85,7 @@ export function StakingDashboard() {
         try {
             return safeParse(amount, decimals)
         } catch {
-            return 0n
+            return BigInt(0)
         }
     }, [amount, decimals])
 
@@ -91,7 +93,7 @@ export function StakingDashboard() {
         try {
             return safeParse(newRewardRate, decimals)
         } catch {
-            return 0n
+            return BigInt(0)
         }
     }, [newRewardRate, decimals])
 
@@ -193,7 +195,7 @@ export function StakingDashboard() {
     const lastSuccessHashRef = useRef<string | undefined>(undefined)
     const lastErrorRef = useRef<string | undefined>(undefined)
 
-    const needsApproval = (allowance ?? 0n) < amountWei
+    const needsApproval = (allowance ?? BigInt(0)) < amountWei
     const canShowAdminPanel = Boolean(isAdmin) || Boolean(isPauser)
 
     async function refreshAll() {
@@ -253,7 +255,7 @@ export function StakingDashboard() {
     }, [writeError, receiptError])
 
     function handleApprove() {
-        if (!isConnected || isWrongNetwork || amountWei <= 0n) return
+        if (!isConnected || isWrongNetwork || amountWei <= BigInt(0)) return
 
         writeContract({
             address: STAKE_TOKEN_ADDRESS,
@@ -265,7 +267,7 @@ export function StakingDashboard() {
     }
 
     function handleStake() {
-        if (!isConnected || isWrongNetwork || amountWei <= 0n) return
+        if (!isConnected || isWrongNetwork || amountWei <= BigInt(0)) return
 
         writeContract({
             address: VAULT_ADDRESS,
@@ -277,7 +279,7 @@ export function StakingDashboard() {
     }
 
     function handleWithdraw() {
-        if (!isConnected || isWrongNetwork || amountWei <= 0n) return
+        if (!isConnected || isWrongNetwork || amountWei <= BigInt(0)) return
 
         writeContract({
             address: VAULT_ADDRESS,
@@ -300,7 +302,7 @@ export function StakingDashboard() {
     }
 
     function handleSetRewardRate() {
-        if (!isConnected || isWrongNetwork || rewardRateWei <= 0n) return
+        if (!isConnected || isWrongNetwork || rewardRateWei <= BigInt(0)) return
 
         writeContract({
             address: VAULT_ADDRESS,
@@ -445,7 +447,7 @@ export function StakingDashboard() {
                                 disabled={
                                     !isConnected ||
                                     isWrongNetwork ||
-                                    amountWei <= 0n ||
+                                    amountWei <= BigInt(0) ||
                                     !needsApproval ||
                                     isWritePending ||
                                     isConfirming
@@ -459,7 +461,7 @@ export function StakingDashboard() {
                                 disabled={
                                     !isConnected ||
                                     isWrongNetwork ||
-                                    amountWei <= 0n ||
+                                    amountWei <= BigInt(0) ||
                                     needsApproval ||
                                     Boolean(paused) ||
                                     isWritePending ||
@@ -474,7 +476,7 @@ export function StakingDashboard() {
                                 disabled={
                                     !isConnected ||
                                     isWrongNetwork ||
-                                    amountWei <= 0n ||
+                                    amountWei <= BigInt(0) ||
                                     isWritePending ||
                                     isConfirming
                                 }
@@ -540,7 +542,7 @@ export function StakingDashboard() {
                                             !Boolean(isAdmin) ||
                                             !isConnected ||
                                             isWrongNetwork ||
-                                            rewardRateWei <= 0n ||
+                                            rewardRateWei <= BigInt(0) ||
                                             isWritePending ||
                                             isConfirming
                                         }
@@ -589,6 +591,27 @@ export function StakingDashboard() {
                         )}
                     </section>
                 </div>
+                {isConnected && address ? (
+                    <section className="mt-8">
+                        <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                            <div className="xl:col-span-1">
+                                <UserSummary
+                                    address={address}
+                                    stakingTokenDecimals={18}
+                                    rewardTokenDecimals={18}
+                                />
+                            </div>
+
+                            <div className="xl:col-span-2">
+                                <HistoryPanel
+                                    address={address}
+                                    stakingTokenDecimals={18}
+                                    rewardTokenDecimals={18}
+                                />
+                            </div>
+                        </div>
+                    </section>
+                ) : null}
             </div>
         </main>
     )

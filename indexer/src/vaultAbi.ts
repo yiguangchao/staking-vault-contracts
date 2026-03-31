@@ -1,31 +1,24 @@
-export const vaultEventAbi = [
-    {
-        type: 'event',
-        name: 'Staked',
-        inputs: [
-            { indexed: true, name: 'user', type: 'address' },
-            { indexed: false, name: 'amount', type: 'uint256' },
-        ],
-    },
-    {
-        type: 'event',
-        name: 'Withdrawn',
-        inputs: [
-            { indexed: true, name: 'user', type: 'address' },
-            { indexed: false, name: 'amount', type: 'uint256' },
-        ],
-    },
-    {
-        type: 'event',
-        name: 'RewardPaid',
-        inputs: [
-            { indexed: true, name: 'user', type: 'address' },
-            { indexed: false, name: 'amount', type: 'uint256' },
-        ],
-    },
-    {
-        type: 'event',
-        name: 'RewardRateUpdated',
-        inputs: [{ indexed: false, name: 'newRewardRate', type: 'uint256' }],
-    },
+import { parseAbiItem } from 'viem'
+
+export const STAKED_EVENT = parseAbiItem(
+    'event Staked(address indexed user, uint256 amount)'
+)
+
+export const WITHDRAWN_EVENT = parseAbiItem(
+    'event Withdrawn(address indexed user, uint256 amount)'
+)
+
+export const REWARD_PAID_EVENT = parseAbiItem(
+    'event RewardPaid(address indexed user, uint256 amount)'
+)
+
+export const REWARD_RATE_UPDATED_EVENT = parseAbiItem(
+    'event RewardRateUpdated(uint256 newRewardRate)'
+)
+
+export const vaultEvents = [
+    STAKED_EVENT,
+    WITHDRAWN_EVENT,
+    REWARD_PAID_EVENT,
+    REWARD_RATE_UPDATED_EVENT,
 ] as const
