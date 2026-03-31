@@ -1,14 +1,19 @@
 import 'dotenv/config'
+import cors from "cors";
 import express from 'express'
-import cors from 'cors'
 import { prisma } from './db'
 import { config } from './config'
 
 const app = express()
-app.use(cors())
+
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+  }),
+);
 app.use(express.json())
 
-app.get('/health', async (_, res) => {
+app.get('/health', async (_req, res) => {
   res.json({ ok: true })
 })
 
@@ -44,7 +49,7 @@ app.get('/users/:userAddress/summary', async (req, res) => {
   res.json(summary ?? null)
 })
 
-app.get('/reward-rate-history', async (_, res) => {
+app.get('/reward-rate-history', async (_req, res) => {
   const history = await prisma.vaultEvent.findMany({
     where: { eventName: 'RewardRateUpdated' },
     orderBy: [{ blockNumber: 'desc' }, { logIndex: 'desc' }],
@@ -54,5 +59,5 @@ app.get('/reward-rate-history', async (_, res) => {
 })
 
 app.listen(config.port, () => {
-  console.log(`indexer api listening on :${config.port}`)
+  console.log(`Indexer API listening on :${config.port}`)
 })
