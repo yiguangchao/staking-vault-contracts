@@ -1,63 +1,101 @@
-import 'dotenv/config'
+import express, { type Response } from "express";
 import cors from "cors";
-import express from 'express'
-import { prisma } from './db'
-import { config } from './config'
+import { prisma } from "./db";
 
-const app = express()
+const app = express();
+const PORT = 4000;
 
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-  }),
-);
-app.use(express.json())
+app.use(cors({ origin: "http://localhost:3000" }));
+app.use(express.json());
 
-app.get('/health', async (_req, res) => {
-  res.json({ ok: true })
-})
+function serializeBigInts<T>(data: T): T {
+  return JSON.parse(
+    JSON.stringify(data, (_key, value) =>
+      typeof value === "bigint" ? value.toString() : value
+    )
+  ) as T;
+}
 
-app.get('/events', async (req, res) => {
-  const limit = Number(req.query.limit ?? 20)
+function sendJson(res: Response, data: unknown, status = 200) {
+  return res.status(status).json(serializeBigInts(data));
+}
+
+app.get("/health", async (_req, res) => {
+  return res.json({
+    ok: true,
+    service: "staking-vault-indexer",
+  });
+});
+
+app.get("/events", async (req, res) => {
+  const limit = Number(req.query.limit ?? 20);
 
   const events = await prisma.vaultEvent.findMany({
-    orderBy: [{ blockNumber: 'desc' }, { logIndex: 'desc' }],
+    orderBy: [{ blockNumber: "desc" }, { logIndex: "desc" }],
     take: limit,
-  })
+  });
 
-  res.json(events)
-})
+  return sendJson(res, events);
+});
 
-app.get('/events/:userAddress', async (req, res) => {
-  const userAddress = req.params.userAddress.toLowerCase()
+app.get("/events/:userAddress", async (req, res) => {
+  const userAddress = req.params.userAddress.toLowerCase();
 
   const events = await prisma.vaultEvent.findMany({
-    where: { userAddress },
-    orderBy: [{ blockNumber: 'desc' }, { logIndex: 'desc' }],
-  })
+    where: {
+      userAddress,
+    },
+    orderBy: [{ blockNumber: "desc" }, { logIndex: "desc" }],
+    take: 50,
+  });
 
-  res.json(events)
-})
+  return sendJson(res, events);
+});
 
-app.get('/users/:userAddress/summary', async (req, res) => {
-  const userAddress = req.params.userAddress.toLowerCase()
+app.get("/users/:userAddress/summary", async (req, res) => {
+  const userAddress = req.params.userAddress.toLowerCase();
 
   const summary = await prisma.userPositionSnapshot.findUnique({
-    where: { userAddress },
-  })
+    where: {
+      userAddress,
+    },
+  });
 
-  res.json(summary ?? null)
-})
+  if (!summary) {
+    return sendJson(res, {
+      userAddress,
+      totalStakedIn: "0",
+      totalWithdrawn: "0",
+      totalRewardsPaid: "0",
+      netStaked: "0",
+      eventCount: 0,
+      updatedAt: null,
+    });
+  }
 
-app.get('/reward-rate-history', async (_req, res) => {
+  const totalStakedIn = BigInt(summary.totalStakedIn ?? 0);
+  const totalWithdrawn = BigInt(summary.totalWithdrawn ?? 0);
+  const totalRewardsPaid = BigInt(summary.totalRewardsPaid ?? 0);
+  const netStaked = totalStakedIn - totalWithdrawn;
+
+  return sendJson(res, {
+    ...summary,
+    netStaked,
+  });
+});
+
+app.get("/reward-rate-history", async (_req, res) => {
   const history = await prisma.vaultEvent.findMany({
-    where: { eventName: 'RewardRateUpdated' },
-    orderBy: [{ blockNumber: 'desc' }, { logIndex: 'desc' }],
-  })
+    where: {
+      eventName: "RewardRateUpdated",
+    },
+    orderBy: [{ blockNumber: "desc" }, { logIndex: "desc" }],
+    take: 50,
+  });
 
-  res.json(history)
-})
+  return sendJson(res, history);
+});
 
-app.listen(config.port, () => {
-  console.log(`Indexer API listening on :${config.port}`)
-})
+app.listen(PORT, () => {
+  console.log(`Indexer API listening on :${PORT}`);
+});
