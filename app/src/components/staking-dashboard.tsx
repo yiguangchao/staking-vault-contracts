@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { formatUnits, parseUnits } from 'viem'
-import { TARGET_CHAIN } from '@/lib/wagmi'
+import { TARGET_CHAIN, TARGET_RPC_URL } from '@/lib/wagmi'
 import { UserSummary } from "@/components/user-summary";
 import { HistoryPanel } from "@/components/history-panel";
 import {
@@ -54,6 +54,8 @@ export function StakingDashboard() {
     const [newRewardRate, setNewRewardRate] = useState('')
 
     const isWrongNetwork = isConnected && chain?.id !== TARGET_CHAIN.id
+    const targetNetworkLabel = `${TARGET_CHAIN.name} (${TARGET_CHAIN.id})`
+    const currentNetworkLabel = chain ? `${chain.name} (${chain.id})` : 'Not connected'
 
     const { switchChain, isPending: isSwitchingChain } = useSwitchChain()
 
@@ -186,6 +188,7 @@ export function StakingDashboard() {
         error: receiptError,
     } = useWaitForTransactionReceipt({
         hash,
+        chainId: TARGET_CHAIN.id,
     })
 
     const explorerBaseUrl = chain?.blockExplorers?.default?.url
@@ -194,7 +197,6 @@ export function StakingDashboard() {
     const lastToastHashRef = useRef<string | undefined>(undefined)
     const lastSuccessHashRef = useRef<string | undefined>(undefined)
     const lastErrorRef = useRef<string | undefined>(undefined)
-
     const needsApproval = (allowance ?? BigInt(0)) < amountWei
     const canShowAdminPanel = Boolean(isAdmin) || Boolean(isPauser)
 
@@ -233,6 +235,7 @@ export function StakingDashboard() {
         if (lastSuccessHashRef.current === hash) return
 
         lastSuccessHashRef.current = hash
+        toast.dismiss()
         toast.success('交易已确认', {
             description: txUrl ? '你可以点下方链接查看区块浏览器' : shortAddress(hash),
         })
@@ -249,6 +252,7 @@ export function StakingDashboard() {
         if (lastErrorRef.current === message) return
 
         lastErrorRef.current = message
+        toast.dismiss()
         toast.error('交易失败', {
             description: message,
         })
@@ -262,7 +266,6 @@ export function StakingDashboard() {
             abi: bootcampTokenAbi,
             functionName: 'approve',
             args: [VAULT_ADDRESS, amountWei],
-            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -274,7 +277,6 @@ export function StakingDashboard() {
             abi: stakingVaultAbi,
             functionName: 'stake',
             args: [amountWei],
-            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -286,7 +288,6 @@ export function StakingDashboard() {
             abi: stakingVaultAbi,
             functionName: 'withdraw',
             args: [amountWei],
-            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -297,7 +298,6 @@ export function StakingDashboard() {
             address: VAULT_ADDRESS,
             abi: stakingVaultAbi,
             functionName: 'claimRewards',
-            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -309,7 +309,6 @@ export function StakingDashboard() {
             abi: stakingVaultAbi,
             functionName: 'setRewardRate',
             args: [rewardRateWei],
-            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -320,7 +319,6 @@ export function StakingDashboard() {
             address: VAULT_ADDRESS,
             abi: stakingVaultAbi,
             functionName: 'pause',
-            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -331,7 +329,6 @@ export function StakingDashboard() {
             address: VAULT_ADDRESS,
             abi: stakingVaultAbi,
             functionName: 'unpause',
-            chainId: TARGET_CHAIN.id,
         })
     }
 
@@ -351,7 +348,8 @@ export function StakingDashboard() {
                                 钱包连接、读写合约、管理员面板、交易反馈、自动刷新
                             </p>
                             <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/55">
-                                <Badge label={`Network: ${chain?.name ?? 'Not connected'}`} />
+                                <Badge label={`Wallet Network: ${currentNetworkLabel}`} />
+                                <Badge label={`Target Network: ${targetNetworkLabel}`} />
                                 <Badge label={`Vault: ${shortAddress(VAULT_ADDRESS)}`} />
                                 <Badge label={`Stake Token: ${shortAddress(STAKE_TOKEN_ADDRESS)}`} />
                                 <Badge label={`Reward Token: ${shortAddress(REWARD_TOKEN_ADDRESS)}`} />
@@ -363,6 +361,30 @@ export function StakingDashboard() {
                 </header>
 
                 {isWrongNetwork && (
+                    <section className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <p className="font-semibold text-amber-200">Network mismatch</p>
+                                <p className="mt-1 text-sm text-amber-100/80">
+                                    This dApp is configured for {targetNetworkLabel}. Your wallet is currently on{' '}
+                                    {currentNetworkLabel}. Switch MetaMask before approving, staking, or claiming.
+                                </p>
+                                <p className="mt-2 text-xs text-amber-100/70">
+                                    MetaMask RPC: {TARGET_RPC_URL || 'Please check NEXT_PUBLIC_SEPOLIA_RPC_URL'}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => switchChain({ chainId: TARGET_CHAIN.id })}
+                                disabled={isSwitchingChain}
+                                className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950 disabled:opacity-50"
+                            >
+                                {isSwitchingChain ? 'Switching...' : `Switch to ${TARGET_CHAIN.name}`}
+                            </button>
+                        </div>
+                    </section>
+                )}
+
+                {false && isWrongNetwork && (
                     <section className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
