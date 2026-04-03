@@ -198,6 +198,7 @@ export function StakingDashboard() {
     const lastSuccessHashRef = useRef<string | undefined>(undefined)
     const lastErrorRef = useRef<string | undefined>(undefined)
     const needsApproval = (allowance ?? BigInt(0)) < amountWei
+    const canWithdrawAmount = amountWei <= (userVaultBalance ?? BigInt(0))
     const canShowAdminPanel = Boolean(isAdmin) || Boolean(isPauser)
 
     async function refreshAll() {
@@ -282,6 +283,12 @@ export function StakingDashboard() {
 
     function handleWithdraw() {
         if (!isConnected || isWrongNetwork || amountWei <= BigInt(0)) return
+        if (!canWithdrawAmount) {
+            toast.error('提现数量超过已质押数量', {
+                description: `当前最多可提现 ${safeFormat(userVaultBalance as bigint, decimals)} ${String(stakeSymbol ?? 'TOKEN')}`,
+            })
+            return
+        }
 
         writeContract({
             address: VAULT_ADDRESS,
@@ -499,6 +506,7 @@ export function StakingDashboard() {
                                     !isConnected ||
                                     isWrongNetwork ||
                                     amountWei <= BigInt(0) ||
+                                    !canWithdrawAmount ||
                                     isWritePending ||
                                     isConfirming
                                 }
