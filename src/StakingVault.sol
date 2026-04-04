@@ -31,6 +31,7 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
     error ZeroAmount();
     error InsufficientBalance();
     error NoRewards();
+    error InsufficientRewardPool(uint256 available, uint256 required);
 
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
@@ -74,6 +75,10 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
         return rewards[account] + (balanceOf[account] * (rpt - userRewardPerTokenPaid[account])) / PRECISION;
     }
 
+    function rewardPoolBalance() public view returns (uint256) {
+        return rewardToken.balanceOf(address(this));
+    }
+
     function stake(uint256 amount) external nonReentrant whenNotPaused updateReward(msg.sender) {
         if (amount == 0) revert ZeroAmount();
 
@@ -100,6 +105,8 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
     function claimRewards() external nonReentrant whenNotPaused updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         if (reward == 0) revert NoRewards();
+        uint256 availableRewards = rewardPoolBalance();
+        if (availableRewards < reward) revert InsufficientRewardPool(availableRewards, reward);
 
         rewards[msg.sender] = 0;
         rewardToken.safeTransfer(msg.sender, reward);

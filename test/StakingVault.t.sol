@@ -48,6 +48,7 @@ contract StakingVaultTest is Test {
         assertEq(address(vault.rewardToken()), address(rewardToken));
         assertEq(vault.rewardRate(), REWARD_RATE);
         assertEq(vault.totalStaked(), 0);
+        assertEq(vault.rewardPoolBalance(), REWARD_FUND);
 
         assertTrue(vault.hasRole(vault.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(vault.hasRole(vault.PAUSER_ROLE(), admin));
@@ -95,6 +96,20 @@ contract StakingVaultTest is Test {
 
         assertEq(rewardToken.balanceOf(alice), 10 ether);
         assertEq(vault.rewards(alice), 0);
+    }
+
+    function test_ClaimRewardsRevertsWhenRewardPoolIsInsufficient() public {
+        vm.prank(address(vault));
+        rewardToken.transfer(address(0xdead), REWARD_FUND - 5 ether);
+
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        vm.expectRevert(abi.encodeWithSelector(StakingVault.InsufficientRewardPool.selector, 5 ether, 10 ether));
+        vm.prank(alice);
+        vault.claimRewards();
     }
 
     function test_RewardSplitBetweenTwoStakers() public {
