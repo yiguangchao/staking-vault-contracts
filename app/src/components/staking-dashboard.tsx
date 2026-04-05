@@ -198,6 +198,7 @@ export function StakingDashboard() {
     const lastSuccessHashRef = useRef<string | undefined>(undefined)
     const lastErrorRef = useRef<string | undefined>(undefined)
     const needsApproval = (allowance ?? BigInt(0)) < amountWei
+    const canStakeAmount = amountWei <= (userStakeTokenBalance ?? BigInt(0))
     const canWithdrawAmount = amountWei <= (userVaultBalance ?? BigInt(0))
     const canShowAdminPanel = Boolean(isAdmin) || Boolean(isPauser)
 
@@ -272,6 +273,12 @@ export function StakingDashboard() {
 
     function handleStake() {
         if (!isConnected || isWrongNetwork || amountWei <= BigInt(0)) return
+        if (!canStakeAmount) {
+            toast.error('Stake amount exceeds wallet balance', {
+                description: `Current wallet balance: ${safeFormat(userStakeTokenBalance as bigint, decimals)} ${String(stakeSymbol ?? 'TOKEN')}`,
+            })
+            return
+        }
 
         writeContract({
             address: VAULT_ADDRESS,
@@ -491,6 +498,7 @@ export function StakingDashboard() {
                                     !isConnected ||
                                     isWrongNetwork ||
                                     amountWei <= BigInt(0) ||
+                                    !canStakeAmount ||
                                     needsApproval ||
                                     Boolean(paused) ||
                                     isWritePending ||
@@ -525,6 +533,27 @@ export function StakingDashboard() {
                                 }
                                 variant="fuchsia"
                             />
+                        </div>
+
+                        <div className="mt-4 space-y-2 text-xs text-white/55">
+                            {!needsApproval && amountWei > BigInt(0) && (
+                                <p>
+                                    Allowance already covers this amount. You can stake directly
+                                    without approving again.
+                                </p>
+                            )}
+                            {needsApproval && amountWei > BigInt(0) && (
+                                <p>
+                                    A new approve usually replaces the previous allowance instead
+                                    of adding to it, so only approve again when the current
+                                    allowance is not enough for this amount.
+                                </p>
+                            )}
+                            <p>
+                                On a local Foundry chain, earned rewards only move when new
+                                blocks are mined. If the value looks frozen, the chain may simply
+                                not have produced another block yet.
+                            </p>
                         </div>
 
                         <StatusPanel
