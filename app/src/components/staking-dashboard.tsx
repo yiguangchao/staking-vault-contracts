@@ -1,11 +1,8 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { formatUnits, parseUnits } from 'viem'
-import { TARGET_CHAIN, TARGET_RPC_URL } from '@/lib/wagmi'
-import { UserSummary } from "@/components/user-summary";
-import { HistoryPanel } from "@/components/history-panel";
 import {
     useAccount,
     useBlockNumber,
@@ -18,12 +15,15 @@ import { toast } from 'sonner'
 
 import { bootcampTokenAbi } from '@/abi/BootcampToken'
 import { stakingVaultAbi } from '@/abi/StakingVault'
+import { HistoryPanel } from '@/components/history-panel'
+import { UserSummary } from '@/components/user-summary'
 import {
     REWARD_TOKEN_ADDRESS,
     STAKE_TOKEN_ADDRESS,
     VAULT_ADDRESS,
 } from '@/lib/contracts'
 import { getTxExplorerUrl } from '@/lib/explorer'
+import { TARGET_CHAIN, TARGET_RPC_URL } from '@/lib/wagmi'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const
 const DEFAULT_ADMIN_ROLE =
@@ -197,9 +197,11 @@ export function StakingDashboard() {
     const lastToastHashRef = useRef<string | undefined>(undefined)
     const lastSuccessHashRef = useRef<string | undefined>(undefined)
     const lastErrorRef = useRef<string | undefined>(undefined)
+
     const needsApproval = (allowance ?? BigInt(0)) < amountWei
     const canStakeAmount = amountWei <= (userStakeTokenBalance ?? BigInt(0))
     const canWithdrawAmount = amountWei <= (userVaultBalance ?? BigInt(0))
+    const canClaimRewards = (userEarned ?? BigInt(0)) > BigInt(0)
     const canShowAdminPanel = Boolean(isAdmin) || Boolean(isPauser)
 
     async function refreshAll() {
@@ -227,7 +229,7 @@ export function StakingDashboard() {
         if (lastToastHashRef.current === hash) return
 
         lastToastHashRef.current = hash
-        toast.loading('交易已发出，等待钱包确认与链上打包…', {
+        toast.loading('Transaction submitted. Waiting for on-chain confirmation...', {
             description: shortAddress(hash),
         })
     }, [hash])
@@ -238,8 +240,10 @@ export function StakingDashboard() {
 
         lastSuccessHashRef.current = hash
         toast.dismiss()
-        toast.success('交易已确认', {
-            description: txUrl ? '你可以点下方链接查看区块浏览器' : shortAddress(hash),
+        toast.success('Transaction confirmed', {
+            description: txUrl
+                ? 'You can open the block explorer link below.'
+                : shortAddress(hash),
         })
 
         refreshAll()
@@ -255,7 +259,7 @@ export function StakingDashboard() {
 
         lastErrorRef.current = message
         toast.dismiss()
-        toast.error('交易失败', {
+        toast.error('Transaction failed', {
             description: message,
         })
     }, [writeError, receiptError])
@@ -273,6 +277,7 @@ export function StakingDashboard() {
 
     function handleStake() {
         if (!isConnected || isWrongNetwork || amountWei <= BigInt(0)) return
+
         if (!canStakeAmount) {
             toast.error('Stake amount exceeds wallet balance', {
                 description: `Current wallet balance: ${safeFormat(userStakeTokenBalance as bigint, decimals)} ${String(stakeSymbol ?? 'TOKEN')}`,
@@ -290,9 +295,10 @@ export function StakingDashboard() {
 
     function handleWithdraw() {
         if (!isConnected || isWrongNetwork || amountWei <= BigInt(0)) return
+
         if (!canWithdrawAmount) {
-            toast.error('提现数量超过已质押数量', {
-                description: `当前最多可提现 ${safeFormat(userVaultBalance as bigint, decimals)} ${String(stakeSymbol ?? 'TOKEN')}`,
+            toast.error('Withdraw amount exceeds staked balance', {
+                description: `Current staked balance: ${safeFormat(userVaultBalance as bigint, decimals)} ${String(stakeSymbol ?? 'TOKEN')}`,
             })
             return
         }
@@ -308,6 +314,13 @@ export function StakingDashboard() {
     function handleClaim() {
         if (!isConnected || isWrongNetwork) return
 
+        if (!canClaimRewards) {
+            toast.error('No rewards available to claim', {
+                description: 'Wait for more blocks or a higher reward rate before claiming again.',
+            })
+            return
+        }
+
         writeContract({
             address: VAULT_ADDRESS,
             abi: stakingVaultAbi,
@@ -317,6 +330,13 @@ export function StakingDashboard() {
 
     function handleSetRewardRate() {
         if (!isConnected || isWrongNetwork || rewardRateWei <= BigInt(0)) return
+
+        if (rewardRateWei === (rewardRate ?? BigInt(0))) {
+            toast.error('Reward rate is already set to this value', {
+                description: 'Enter a different value before submitting a new admin transaction.',
+            })
+            return
+        }
 
         writeContract({
             address: VAULT_ADDRESS,
@@ -359,7 +379,8 @@ export function StakingDashboard() {
                                 Bootcamp Staking dApp
                             </h1>
                             <p className="mt-2 text-sm text-white/65">
-                                钱包连接、读写合约、管理员面板、交易反馈、自动刷新
+                                Wallet connection, contract reads and writes, admin controls,
+                                transaction feedback, and live dashboard refresh.
                             </p>
                             <div className="mt-4 flex flex-wrap gap-2 text-xs text-white/55">
                                 <Badge label={`Wallet Network: ${currentNetworkLabel}`} />
@@ -398,26 +419,6 @@ export function StakingDashboard() {
                     </section>
                 )}
 
-                {false && isWrongNetwork && (
-                    <section className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4">
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <p className="font-semibold text-amber-200">当前网络不对</p>
-                                <p className="mt-1 text-sm text-amber-100/80">
-                                    这个 dApp 目前只接 TARGET_CHAIN。请切换到 TARGET_CHAIN 后再进行读写操作。
-                                </p>
-                            </div>
-                            <button
-                                onClick={() => switchChain({ chainId: TARGET_CHAIN.id })}
-                                disabled={isSwitchingChain}
-                                className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950 disabled:opacity-50"
-                            >
-                                {isSwitchingChain ? '切换中…' : '切到 TARGET_CHAIN'}
-                            </button>
-                        </div>
-                    </section>
-                )}
-
                 <section className="grid gap-4 md:grid-cols-4">
                     <StatCard
                         title="Vault Total Staked"
@@ -441,6 +442,10 @@ export function StakingDashboard() {
                     />
                 </section>
 
+                <div className="mt-2 text-xs text-white/50">
+                    On a local Foundry chain, rewards only move forward when new blocks are mined.
+                </div>
+
                 <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
                     <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur">
                         <h2 className="text-xl font-semibold">User Panel</h2>
@@ -454,10 +459,7 @@ export function StakingDashboard() {
                                 label="Allowance to Vault"
                                 value={safeFormat(allowance as bigint, decimals)}
                             />
-                            <InfoRow
-                                label="Vault Paused"
-                                value={paused ? 'Yes' : 'No'}
-                            />
+                            <InfoRow label="Vault Paused" value={paused ? 'Yes' : 'No'} />
                             <InfoRow
                                 label="Connected Address"
                                 value={isConnected ? shortAddress(address) : 'Not connected'}
@@ -474,6 +476,22 @@ export function StakingDashboard() {
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
                             />
+                        </div>
+
+                        <div className="mt-4 space-y-2 text-xs text-white/55">
+                            {!needsApproval && amountWei > BigInt(0) && (
+                                <p>
+                                    Allowance already covers this amount. You can stake directly
+                                    without approving again.
+                                </p>
+                            )}
+                            {needsApproval && amountWei > BigInt(0) && (
+                                <p>
+                                    A new approve usually replaces the previous allowance instead
+                                    of adding to it, so only approve again when the current
+                                    allowance is not enough for this amount.
+                                </p>
+                            )}
                         </div>
 
                         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -527,33 +545,13 @@ export function StakingDashboard() {
                                 disabled={
                                     !isConnected ||
                                     isWrongNetwork ||
+                                    !canClaimRewards ||
                                     Boolean(paused) ||
                                     isWritePending ||
                                     isConfirming
                                 }
                                 variant="fuchsia"
                             />
-                        </div>
-
-                        <div className="mt-4 space-y-2 text-xs text-white/55">
-                            {!needsApproval && amountWei > BigInt(0) && (
-                                <p>
-                                    Allowance already covers this amount. You can stake directly
-                                    without approving again.
-                                </p>
-                            )}
-                            {needsApproval && amountWei > BigInt(0) && (
-                                <p>
-                                    A new approve usually replaces the previous allowance instead
-                                    of adding to it, so only approve again when the current
-                                    allowance is not enough for this amount.
-                                </p>
-                            )}
-                            <p>
-                                On a local Foundry chain, earned rewards only move when new
-                                blocks are mined. If the value looks frozen, the chain may simply
-                                not have produced another block yet.
-                            </p>
                         </div>
 
                         <StatusPanel
@@ -572,7 +570,7 @@ export function StakingDashboard() {
 
                         {!canShowAdminPanel ? (
                             <div className="mt-4 rounded-2xl border border-white/10 bg-slate-900/60 p-4 text-sm text-white/60">
-                                当前地址不是 admin / pauser，看不到管理员操作。
+                                The connected address does not have admin or pauser permissions.
                             </div>
                         ) : (
                             <>
@@ -602,6 +600,7 @@ export function StakingDashboard() {
                                             !isConnected ||
                                             isWrongNetwork ||
                                             rewardRateWei <= BigInt(0) ||
+                                            rewardRateWei === (rewardRate ?? BigInt(0)) ||
                                             isWritePending ||
                                             isConfirming
                                         }
@@ -640,16 +639,16 @@ export function StakingDashboard() {
                                 </div>
 
                                 <div className="mt-5 rounded-2xl border border-white/10 bg-slate-900/50 p-4 text-sm text-white/65">
-                                    暂停后：
-                                    <span className="mx-1 text-white">stake / claimRewards</span>
-                                    被禁用，但
-                                    <span className="mx-1 text-white">withdraw</span>
-                                    仍然保留，方便用户退出仓位。
+                                    When paused, <span className="mx-1 text-white">stake</span> and{' '}
+                                    <span className="mx-1 text-white">claimRewards</span> are blocked,
+                                    while <span className="mx-1 text-white">withdraw</span> stays
+                                    available so users can still exit their position.
                                 </div>
                             </>
                         )}
                     </section>
                 </div>
+
                 {isConnected && address ? (
                     <section className="mt-8">
                         <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -698,17 +697,17 @@ function StatusPanel({
             <p className="mb-3 font-medium text-white/80">Transaction Status</p>
 
             <div className="space-y-2 text-white/65">
-                {isWritePending && <p>请在钱包中确认交易…</p>}
-                {isConfirming && <p>交易已发出，等待区块确认…</p>}
-                {isConfirmed && <p className="text-emerald-400">交易已确认。</p>}
-                {writeError && <p className="break-all text-red-400">写交易失败：{writeError}</p>}
-                {receiptError && <p className="break-all text-red-400">上链失败：{receiptError}</p>}
+                {isWritePending && <p>Please confirm the transaction in your wallet.</p>}
+                {isConfirming && <p>Transaction sent. Waiting for block confirmation...</p>}
+                {isConfirmed && <p className="text-emerald-400">Transaction confirmed.</p>}
+                {writeError && <p className="break-all text-red-400">Write failed: {writeError}</p>}
+                {receiptError && <p className="break-all text-red-400">On-chain failure: {receiptError}</p>}
 
                 {!isWritePending &&
                     !isConfirming &&
                     !isConfirmed &&
                     !writeError &&
-                    !receiptError && <p>当前没有进行中的交易。</p>}
+                    !receiptError && <p>No transaction is currently in progress.</p>}
 
                 {hash && (
                     <p className="break-all text-white/45">
@@ -723,7 +722,7 @@ function StatusPanel({
                         rel="noreferrer"
                         className="inline-flex text-cyan-300 underline underline-offset-4"
                     >
-                        在区块浏览器查看交易
+                        View transaction in block explorer
                     </a>
                 )}
             </div>
@@ -794,10 +793,10 @@ function ActionButton({
         <button
             onClick={onClick}
             disabled={disabled}
-            className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${variantClass} ${fullWidth ? 'w-full' : 'w-full'
-                } disabled:cursor-not-allowed disabled:opacity-40`}
+            className={`rounded-2xl px-4 py-3 text-sm font-semibold transition ${variantClass} ${fullWidth ? 'w-full' : 'w-full'} disabled:cursor-not-allowed disabled:opacity-40`}
         >
             {label}
         </button>
     )
 }
+
