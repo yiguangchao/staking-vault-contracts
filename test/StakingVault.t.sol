@@ -98,6 +98,20 @@ contract StakingVaultTest is Test {
         assertEq(vault.rewards(alice), 0);
     }
 
+    function test_PauseStopsClaimRewards() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        vm.prank(admin);
+        vault.pause();
+
+        vm.prank(alice);
+        vm.expectRevert();
+        vault.claimRewards();
+    }
+
     function test_ClaimRewardsRevertsWhenRewardPoolIsInsufficient() public {
         vm.prank(address(vault));
         rewardToken.transfer(address(0xdead), REWARD_FUND - 5 ether);
@@ -165,6 +179,15 @@ contract StakingVaultTest is Test {
 
         assertEq(vault.balanceOf(alice), 60 ether);
         assertEq(stakeToken.balanceOf(alice), INITIAL_USER_BALANCE - 60 ether);
+    }
+
+    function test_WithdrawRevertsWhenAmountExceedsStakedBalance() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.expectRevert(StakingVault.InsufficientBalance.selector);
+        vm.prank(alice);
+        vault.withdraw(101 ether);
     }
 
     function testFuzz_Stake(uint256 amount) public {
