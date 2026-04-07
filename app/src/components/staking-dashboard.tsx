@@ -26,6 +26,7 @@ import { getTxExplorerUrl } from '@/lib/explorer'
 import { TARGET_CHAIN, TARGET_RPC_URL } from '@/lib/wagmi'
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000' as const
+const MAX_UINT256 = (BigInt(1) << BigInt(256)) - BigInt(1)
 const DEFAULT_ADMIN_ROLE =
     '0x0000000000000000000000000000000000000000000000000000000000000000' as const
 
@@ -148,6 +149,12 @@ export function StakingDashboard() {
         functionName: 'rewardRate',
     })
 
+    const { data: rewardPoolBalance, refetch: refetchRewardPoolBalance } = useReadContract({
+        address: VAULT_ADDRESS,
+        abi: stakingVaultAbi,
+        functionName: 'rewardPoolBalance',
+    })
+
     const { data: paused, refetch: refetchPaused } = useReadContract({
         address: VAULT_ADDRESS,
         abi: stakingVaultAbi,
@@ -215,6 +222,7 @@ export function StakingDashboard() {
             refetchAllowance(),
             refetchTotalStaked(),
             refetchRewardRate(),
+            refetchRewardPoolBalance(),
             refetchPaused(),
         ])
     }
@@ -272,6 +280,17 @@ export function StakingDashboard() {
             abi: bootcampTokenAbi,
             functionName: 'approve',
             args: [VAULT_ADDRESS, amountWei],
+        })
+    }
+
+    function handleApproveMax() {
+        if (!isConnected || isWrongNetwork) return
+
+        writeContract({
+            address: STAKE_TOKEN_ADDRESS,
+            abi: bootcampTokenAbi,
+            functionName: 'approve',
+            args: [VAULT_ADDRESS, MAX_UINT256],
         })
     }
 
@@ -442,8 +461,11 @@ export function StakingDashboard() {
                     />
                 </section>
 
-                <div className="mt-2 text-xs text-white/50">
-                    On a local Foundry chain, rewards only move forward when new blocks are mined.
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-white/55">
+                    <Badge
+                        label={`Reward Pool Balance: ${safeFormat(rewardPoolBalance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
+                    />
+                    <Badge label="Local Foundry rewards only move when new blocks are mined." />
                 </div>
 
                 <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
@@ -467,9 +489,41 @@ export function StakingDashboard() {
                         </div>
 
                         <div className="mt-6">
-                            <label className="mb-2 block text-sm text-white/70">
-                                Amount ({String(stakeSymbol ?? 'TOKEN')})
-                            </label>
+                            <div className="mb-2 flex items-center justify-between gap-3">
+                                <label className="block text-sm text-white/70">
+                                    Amount ({String(stakeSymbol ?? 'TOKEN')})
+                                </label>
+                                <div className="flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setAmount(
+                                                formatUnits(
+                                                    userStakeTokenBalance ?? BigInt(0),
+                                                    decimals
+                                                )
+                                            )
+                                        }
+                                        disabled={!isConnected || (userStakeTokenBalance ?? BigInt(0)) <= BigInt(0)}
+                                        className="rounded-xl border border-white/10 bg-white/5 px-3 py-1 text-xs text-white/75 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        Max
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleApproveMax}
+                                        disabled={
+                                            !isConnected ||
+                                            isWrongNetwork ||
+                                            isWritePending ||
+                                            isConfirming
+                                        }
+                                        className="rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200 transition hover:bg-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        Approve Max
+                                    </button>
+                                </div>
+                            </div>
                             <input
                                 className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-base outline-none placeholder:text-white/25"
                                 placeholder="100"
@@ -492,6 +546,11 @@ export function StakingDashboard() {
                                     allowance is not enough for this amount.
                                 </p>
                             )}
+                            <p>
+                                Use <span className="text-white">Max</span> to fill in your wallet
+                                balance, or <span className="text-white">Approve Max</span> to set
+                                a very large allowance for future staking.
+                            </p>
                         </div>
 
                         <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -577,6 +636,10 @@ export function StakingDashboard() {
                                 <div className="mt-4 grid gap-3">
                                     <InfoRow label="Admin Role" value={isAdmin ? 'Yes' : 'No'} />
                                     <InfoRow label="Pauser Role" value={isPauser ? 'Yes' : 'No'} />
+                                    <InfoRow
+                                        label="Reward Pool Balance"
+                                        value={`${safeFormat(rewardPoolBalance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
+                                    />
                                 </div>
 
                                 <div className="mt-6">
