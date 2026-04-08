@@ -37,6 +37,8 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 amount);
     event RewardRateUpdated(uint256 newRewardRate);
+    event RewardPoolFunded(address indexed funder, uint256 amount);
+    event RewardPoolWithdrawn(address indexed recipient, uint256 amount);
 
     constructor(address admin, address _stakingToken, address _rewardToken) {
         if (admin == address(0) || _stakingToken == address(0) || _rewardToken == address(0)) {
@@ -77,6 +79,26 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
 
     function rewardPoolBalance() public view returns (uint256) {
         return rewardToken.balanceOf(address(this));
+    }
+
+    function fundRewardPool(uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+        if (amount == 0) revert ZeroAmount();
+
+        rewardToken.safeTransferFrom(msg.sender, address(this), amount);
+
+        emit RewardPoolFunded(msg.sender, amount);
+    }
+
+    function withdrawRewardPool(uint256 amount, address to) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+        if (to == address(0)) revert ZeroAddress();
+        if (amount == 0) revert ZeroAmount();
+
+        uint256 availableRewards = rewardPoolBalance();
+        if (availableRewards < amount) revert InsufficientRewardPool(availableRewards, amount);
+
+        rewardToken.safeTransfer(to, amount);
+
+        emit RewardPoolWithdrawn(to, amount);
     }
 
     function stake(uint256 amount) external nonReentrant whenNotPaused updateReward(msg.sender) {
