@@ -54,6 +54,46 @@ contract StakingVaultTest is Test {
         assertTrue(vault.hasRole(vault.PAUSER_ROLE(), admin));
     }
 
+    function test_AdminCanFundRewardPool() public {
+        uint256 extraFunding = 250 ether;
+
+        vm.startPrank(admin);
+        rewardToken.mint(admin, extraFunding);
+        rewardToken.approve(address(vault), extraFunding);
+        vault.fundRewardPool(extraFunding);
+        vm.stopPrank();
+
+        assertEq(vault.rewardPoolBalance(), REWARD_FUND + extraFunding);
+    }
+
+    function test_NonAdminCannotFundRewardPool() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, alice, vault.DEFAULT_ADMIN_ROLE()
+            )
+        );
+        vm.prank(alice);
+        vault.fundRewardPool(1 ether);
+    }
+
+    function test_AdminCanWithdrawRewardPool() public {
+        uint256 withdrawalAmount = 125 ether;
+
+        vm.prank(admin);
+        vault.withdrawRewardPool(withdrawalAmount, admin);
+
+        assertEq(vault.rewardPoolBalance(), REWARD_FUND - withdrawalAmount);
+        assertEq(rewardToken.balanceOf(admin), withdrawalAmount);
+    }
+
+    function test_WithdrawRewardPoolRevertsWhenAmountExceedsBalance() public {
+        vm.expectRevert(
+            abi.encodeWithSelector(StakingVault.InsufficientRewardPool.selector, REWARD_FUND, REWARD_FUND + 1)
+        );
+        vm.prank(admin);
+        vault.withdrawRewardPool(REWARD_FUND + 1, admin);
+    }
+
     function test_Stake() public {
         vm.prank(alice);
         vault.stake(100 ether);

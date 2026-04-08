@@ -82,6 +82,23 @@ export const stakingVaultAbi = [
     {
         type: 'function',
         stateMutability: 'nonpayable',
+        name: 'fundRewardPool',
+        inputs: [{ name: 'amount', type: 'uint256' }],
+        outputs: [],
+    },
+    {
+        type: 'function',
+        stateMutability: 'nonpayable',
+        name: 'withdrawRewardPool',
+        inputs: [
+            { name: 'amount', type: 'uint256' },
+            { name: 'to', type: 'address' },
+        ],
+        outputs: [],
+    },
+    {
+        type: 'function',
+        stateMutability: 'nonpayable',
         name: 'stake',
         inputs: [{ name: 'amount', type: 'uint256' }],
         outputs: [],
