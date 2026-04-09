@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { formatUnits, parseUnits } from 'viem'
 import {
@@ -53,6 +53,7 @@ export function StakingDashboard() {
 
     const [amount, setAmount] = useState('')
     const [newRewardRate, setNewRewardRate] = useState('')
+    const [rewardPoolAmount, setRewardPoolAmount] = useState('')
 
     const isWrongNetwork = isConnected && chain?.id !== TARGET_CHAIN.id
     const targetNetworkLabel = `${TARGET_CHAIN.name} (${TARGET_CHAIN.id})`
@@ -100,6 +101,14 @@ export function StakingDashboard() {
         }
     }, [newRewardRate, decimals])
 
+    const rewardPoolAmountWei = useMemo(() => {
+        try {
+            return safeParse(rewardPoolAmount, decimals)
+        } catch {
+            return BigInt(0)
+        }
+    }, [rewardPoolAmount, decimals])
+
     const {
         data: userStakeTokenBalance,
         refetch: refetchUserStakeTokenBalance,
@@ -130,8 +139,28 @@ export function StakingDashboard() {
         args: [account],
     })
 
+    const {
+        data: userRewardTokenBalance,
+        refetch: refetchUserRewardTokenBalance,
+    } = useReadContract({
+        address: REWARD_TOKEN_ADDRESS,
+        abi: bootcampTokenAbi,
+        functionName: 'balanceOf',
+        args: [account],
+    })
+
     const { data: allowance, refetch: refetchAllowance } = useReadContract({
         address: STAKE_TOKEN_ADDRESS,
+        abi: bootcampTokenAbi,
+        functionName: 'allowance',
+        args: [account, VAULT_ADDRESS],
+    })
+
+    const {
+        data: rewardTokenAllowance,
+        refetch: refetchRewardTokenAllowance,
+    } = useReadContract({
+        address: REWARD_TOKEN_ADDRESS,
         abi: bootcampTokenAbi,
         functionName: 'allowance',
         args: [account, VAULT_ADDRESS],
@@ -209,9 +238,12 @@ export function StakingDashboard() {
     const canStakeAmount = amountWei <= (userStakeTokenBalance ?? BigInt(0))
     const canWithdrawAmount = amountWei <= (userVaultBalance ?? BigInt(0))
     const canClaimRewards = (userEarned ?? BigInt(0)) > BigInt(0)
+    const needsRewardPoolApproval = (rewardTokenAllowance ?? BigInt(0)) < rewardPoolAmountWei
+    const canFundRewardPoolAmount = rewardPoolAmountWei <= (userRewardTokenBalance ?? BigInt(0))
+    const canWithdrawRewardPoolAmount = rewardPoolAmountWei <= (rewardPoolBalance ?? BigInt(0))
     const canShowAdminPanel = Boolean(isAdmin) || Boolean(isPauser)
 
-    async function refreshAll() {
+    const refreshAll = useCallback(async () => {
         await Promise.all([
             refetchStakeSymbol(),
             refetchRewardSymbol(),
@@ -219,18 +251,34 @@ export function StakingDashboard() {
             refetchUserStakeTokenBalance(),
             refetchUserVaultBalance(),
             refetchUserEarned(),
+            refetchUserRewardTokenBalance(),
             refetchAllowance(),
+            refetchRewardTokenAllowance(),
             refetchTotalStaked(),
             refetchRewardRate(),
             refetchRewardPoolBalance(),
             refetchPaused(),
         ])
-    }
+    }, [
+        refetchStakeSymbol,
+        refetchRewardSymbol,
+        refetchStakeDecimals,
+        refetchUserStakeTokenBalance,
+        refetchUserVaultBalance,
+        refetchUserEarned,
+        refetchUserRewardTokenBalance,
+        refetchAllowance,
+        refetchRewardTokenAllowance,
+        refetchTotalStaked,
+        refetchRewardRate,
+        refetchRewardPoolBalance,
+        refetchPaused,
+    ])
 
     useEffect(() => {
         if (!blockNumber) return
         refreshAll()
-    }, [blockNumber])
+    }, [blockNumber, refreshAll])
 
     useEffect(() => {
         if (!hash) return
@@ -257,8 +305,9 @@ export function StakingDashboard() {
         refreshAll()
         setAmount('')
         setNewRewardRate('')
+        setRewardPoolAmount('')
         reset()
-    }, [isConfirmed, hash, txUrl, reset])
+    }, [isConfirmed, hash, txUrl, reset, refreshAll])
 
     useEffect(() => {
         const message = writeError?.message || receiptError?.message
@@ -362,6 +411,60 @@ export function StakingDashboard() {
             abi: stakingVaultAbi,
             functionName: 'setRewardRate',
             args: [rewardRateWei],
+        })
+    }
+
+    function handleApproveRewardPool() {
+        if (!isConnected || isWrongNetwork || rewardPoolAmountWei <= BigInt(0)) return
+
+        writeContract({
+            address: REWARD_TOKEN_ADDRESS,
+            abi: bootcampTokenAbi,
+            functionName: 'approve',
+            args: [VAULT_ADDRESS, rewardPoolAmountWei],
+        })
+    }
+
+    function handleFundRewardPool() {
+        if (!isConnected || isWrongNetwork || rewardPoolAmountWei <= BigInt(0)) return
+
+        if (!canFundRewardPoolAmount) {
+            toast.error('Funding amount exceeds reward token wallet balance', {
+                description: `Current reward token balance: ${safeFormat(userRewardTokenBalance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`,
+            })
+            return
+        }
+
+        if (needsRewardPoolApproval) {
+            toast.error('Approve the reward token first', {
+                description: 'The vault needs allowance to transfer reward tokens into the reward pool.',
+            })
+            return
+        }
+
+        writeContract({
+            address: VAULT_ADDRESS,
+            abi: stakingVaultAbi,
+            functionName: 'fundRewardPool',
+            args: [rewardPoolAmountWei],
+        })
+    }
+
+    function handleWithdrawRewardPool() {
+        if (!isConnected || isWrongNetwork || rewardPoolAmountWei <= BigInt(0)) return
+
+        if (!canWithdrawRewardPoolAmount) {
+            toast.error('Withdraw amount exceeds reward pool balance', {
+                description: `Current reward pool balance: ${safeFormat(rewardPoolBalance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`,
+            })
+            return
+        }
+
+        writeContract({
+            address: VAULT_ADDRESS,
+            abi: stakingVaultAbi,
+            functionName: 'withdrawRewardPool',
+            args: [rewardPoolAmountWei, account],
         })
     }
 
@@ -637,6 +740,14 @@ export function StakingDashboard() {
                                     <InfoRow label="Admin Role" value={isAdmin ? 'Yes' : 'No'} />
                                     <InfoRow label="Pauser Role" value={isPauser ? 'Yes' : 'No'} />
                                     <InfoRow
+                                        label={`Admin ${String(rewardSymbol ?? 'RWD')} Balance`}
+                                        value={`${safeFormat(userRewardTokenBalance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
+                                    />
+                                    <InfoRow
+                                        label="Reward Token Allowance to Vault"
+                                        value={`${safeFormat(rewardTokenAllowance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
+                                    />
+                                    <InfoRow
                                         label="Reward Pool Balance"
                                         value={`${safeFormat(rewardPoolBalance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
                                     />
@@ -651,6 +762,18 @@ export function StakingDashboard() {
                                         placeholder="1"
                                         value={newRewardRate}
                                         onChange={(e) => setNewRewardRate(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="mt-4">
+                                    <label className="mb-2 block text-sm text-white/70">
+                                        Reward Pool Amount ({String(rewardSymbol ?? 'RWD')})
+                                    </label>
+                                    <input
+                                        className="w-full rounded-2xl border border-white/10 bg-slate-950/80 px-4 py-3 text-base outline-none placeholder:text-white/25"
+                                        placeholder="500"
+                                        value={rewardPoolAmount}
+                                        onChange={(e) => setRewardPoolAmount(e.target.value)}
                                     />
                                 </div>
 
@@ -670,6 +793,52 @@ export function StakingDashboard() {
                                         variant="cyan"
                                         fullWidth
                                     />
+
+                                    <div className="grid gap-3 sm:grid-cols-3">
+                                        <ActionButton
+                                            label="Approve Reward Token"
+                                            onClick={handleApproveRewardPool}
+                                            disabled={
+                                                !Boolean(isAdmin) ||
+                                                !isConnected ||
+                                                isWrongNetwork ||
+                                                rewardPoolAmountWei <= BigInt(0) ||
+                                                !needsRewardPoolApproval ||
+                                                isWritePending ||
+                                                isConfirming
+                                            }
+                                            variant="blue"
+                                        />
+                                        <ActionButton
+                                            label="Fund Reward Pool"
+                                            onClick={handleFundRewardPool}
+                                            disabled={
+                                                !Boolean(isAdmin) ||
+                                                !isConnected ||
+                                                isWrongNetwork ||
+                                                rewardPoolAmountWei <= BigInt(0) ||
+                                                !canFundRewardPoolAmount ||
+                                                needsRewardPoolApproval ||
+                                                isWritePending ||
+                                                isConfirming
+                                            }
+                                            variant="emerald"
+                                        />
+                                        <ActionButton
+                                            label="Withdraw Reward Pool"
+                                            onClick={handleWithdrawRewardPool}
+                                            disabled={
+                                                !Boolean(isAdmin) ||
+                                                !isConnected ||
+                                                isWrongNetwork ||
+                                                rewardPoolAmountWei <= BigInt(0) ||
+                                                !canWithdrawRewardPoolAmount ||
+                                                isWritePending ||
+                                                isConfirming
+                                            }
+                                            variant="amber"
+                                        />
+                                    </div>
 
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         <ActionButton
@@ -702,6 +871,12 @@ export function StakingDashboard() {
                                 </div>
 
                                 <div className="mt-5 rounded-2xl border border-white/10 bg-slate-900/50 p-4 text-sm text-white/65">
+                                    Admin funding first approves the reward token, then moves it into
+                                    the vault reward pool. Reward-pool withdrawals send tokens back to
+                                    the connected admin wallet.
+                                </div>
+
+                                <div className="mt-3 rounded-2xl border border-white/10 bg-slate-900/50 p-4 text-sm text-white/65">
                                     When paused, <span className="mx-1 text-white">stake</span> and{' '}
                                     <span className="mx-1 text-white">claimRewards</span> are blocked,
                                     while <span className="mx-1 text-white">withdraw</span> stays
