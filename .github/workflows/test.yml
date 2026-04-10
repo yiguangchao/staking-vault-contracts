@@ -1,11 +1,11 @@
-name: Foundry CI
+name: Project CI
 
 on:
   push:
   pull_request:
 
 jobs:
-  test:
+  foundry:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,4 +24,33 @@ jobs:
         run: forge build
 
       - name: Test
-        run: forge test -vvv
+        run: forge test -vv
+
+  app-lint:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install app dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint frontend
+        run: pnpm lint

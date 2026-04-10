@@ -26,10 +26,11 @@ contract DeployScript is Script {
 
         vault = new StakingVault(admin, address(stakeToken), address(rewardToken));
 
-        // 给 vault 注入奖励池
-        rewardToken.transfer(address(vault), REWARD_POOL_AMOUNT);
+        // Approve and fund the reward pool through the vault's admin function.
+        rewardToken.approve(address(vault), REWARD_POOL_AMOUNT);
+        vault.fundRewardPool(REWARD_POOL_AMOUNT);
 
-        // 设置奖励速率
+        // Configure the initial reward rate.
         vault.setRewardRate(REWARD_RATE);
 
         vm.stopBroadcast();
@@ -45,4 +46,5 @@ contract DeployScript is Script {
         require(vault.rewardRate() == REWARD_RATE, "reward rate not set");
     }
 }
+
 
