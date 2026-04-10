@@ -181,6 +181,35 @@ contract StakingVaultTest is Test {
         assertEq(vault.earned(bob), 5 ether);
     }
 
+    function test_SetRewardRatePreservesPreviouslyAccruedRewards() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        vm.prank(admin);
+        vault.setRewardRate(2 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        assertEq(vault.earned(alice), 30 ether);
+    }
+
+    function test_ClaimRewardsResetsOnlyPaidPortionAndFutureRewardsKeepAccruing() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        vm.prank(alice);
+        vault.claimRewards();
+
+        vm.warp(block.timestamp + 5);
+
+        assertEq(rewardToken.balanceOf(alice), 10 ether);
+        assertEq(vault.earned(alice), 5 ether);
+    }
+
     function test_AdminCanSetRewardRate() public {
         vm.prank(admin);
         vault.setRewardRate(2 ether);

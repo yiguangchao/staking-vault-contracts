@@ -20,6 +20,9 @@ A full-stack Web3 staking demo built with Solidity, Foundry, Next.js, wagmi, vie
 
 ### Admin Features
 - Set the reward rate per second
+- Approve reward tokens to the vault for pool funding
+- Fund the reward pool through the vault admin flow
+- Withdraw unused reward-pool funds back to the admin wallet
 - Pause the protocol in emergency situations
 - Unpause the protocol after recovery
 
@@ -55,6 +58,8 @@ Core vault logic:
 - `withdraw(uint256 amount)`
 - `claimRewards()`
 - `setRewardRate(uint256 newRewardRate)`
+- `fundRewardPool(uint256 amount)`
+- `withdrawRewardPool(uint256 amount, address to)`
 - `pause()` / `unpause()`
 
 Security modules used:
@@ -76,6 +81,26 @@ Important notes:
 - `Stake` is the action that actually transfers tokens into the vault.
 - `My Earned Rewards` shows claimable rewards, not rewards already transferred to the wallet.
 - On a local Foundry chain, rewards only move when new blocks are mined.
+
+## Reward Pool Management
+
+The reward pool is now managed explicitly through the vault instead of relying only on manual token transfers.
+
+Admin reward-pool flow:
+1. Hold reward tokens in the admin wallet
+2. Approve the vault to spend the reward token
+3. Call `fundRewardPool(amount)` from the admin account
+4. The vault records the funded balance and uses it for future reward payouts
+
+Admin withdrawal flow:
+1. Enter a reward-pool amount in the admin panel
+2. Call `withdrawRewardPool(amount, to)`
+3. The vault transfers unused reward tokens back to the chosen recipient
+
+Why this matters:
+- The protocol now has a formal funding path instead of an implicit “send tokens to the contract” step
+- Frontend validation can check admin reward-token balance and allowance before sending transactions
+- The reward-pool lifecycle is easier to explain, test, and operate
 
 ## Architecture Overview
 
@@ -122,7 +147,67 @@ forge build
 forge test
 ```
 
-Use the deployment script in `script/Deploy.s.sol` to deploy local contracts if needed.
+Use the deployment script in `script/Deploy.s.sol` to deploy local contracts if needed. The script now:
+- deploys the stake token
+- deploys the reward token
+- deploys the vault
+- approves the vault for reward-pool funding
+- funds the reward pool via `fundRewardPool`
+- sets the initial `rewardRate`
+
+Local broadcast example:
+```bash
+forge script script/Deploy.s.sol:DeployScript \
+  --rpc-url http://127.0.0.1:8545 \
+  --broadcast
+```
+
+### 3.1 Deploy to Sepolia
+
+Required root `.env` values:
+```bash
+PRIVATE_KEY=0x...
+SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your-key
+ETHERSCAN_API_KEY=your_etherscan_key
+```
+
+Sepolia deployment command:
+```bash
+forge script script/Deploy.s.sol:DeployScript \
+  --rpc-url $SEPOLIA_RPC_URL \
+  --broadcast
+```
+
+If you want Foundry to verify during broadcast:
+```bash
+forge script script/Deploy.s.sol:DeployScript \
+  --rpc-url $SEPOLIA_RPC_URL \
+  --broadcast \
+  --verify \
+  --etherscan-api-key $ETHERSCAN_API_KEY
+```
+
+### 3.2 Verify Contracts on Etherscan
+
+If you prefer separate verification after deployment, use the deployed constructor arguments and run `forge verify-contract`.
+
+Typical pattern:
+```bash
+forge verify-contract \
+  --chain sepolia \
+  --etherscan-api-key $ETHERSCAN_API_KEY \
+  <DEPLOYED_CONTRACT_ADDRESS> \
+  src/StakingVault.sol:StakingVault
+```
+
+Do the same for:
+- `src/BootcampToken.sol:BootcampToken` for the staking token
+- `src/BootcampToken.sol:BootcampToken` for the reward token
+- `src/StakingVault.sol:StakingVault` for the vault
+
+Note:
+- Verification requires the real deployed addresses from Sepolia
+- I can prepare the workflow and commands locally, but the actual deploy/verify step still needs your real private key, RPC, and Etherscan API key
 
 ### 4. Start the frontend
 
@@ -199,8 +284,26 @@ forge test -vv
 Run frontend linting:
 ```bash
 cd app
-npm run lint
+pnpm lint
 ```
+
+Useful higher-signal contract checks added in this project:
+- reward-pool funding and withdrawal permissions
+- reward-pool insufficiency revert path
+- paused claim revert path
+- reward-rate changes preserving already accrued rewards
+- post-claim future accrual continuing correctly
+
+## CI
+
+GitHub Actions now runs:
+- `forge build`
+- `forge test -vv`
+- frontend dependency install
+- frontend lint
+
+Workflow file:
+- [`.github/workflows/test.yml`](./.github/workflows/test.yml)
 
 ## Documentation Assets
 
@@ -216,10 +319,10 @@ Useful diagrams and notes:
 
 This project is strong as a portfolio-quality demo, but it is not production-ready yet. Major future improvements include:
 
-- Better reward pool management
+- Reward campaign scheduling and richer admin controls
 - More complete frontend validation and UX polish
 - Full cleanup of historical UI copy and localization
-- More advanced Foundry tests, including invariants
+- More advanced Foundry tests, including invariants and fork-based checks
 - End-to-end browser tests
 - Stronger indexer resilience and reorg handling
 - Production deployment workflow and multi-environment setup
