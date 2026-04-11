@@ -26,3 +26,5 @@ node_modules/
 package-lock.json
 
 package-lock.backup.json
+
+app/.next-ci-test/*
