@@ -8,9 +8,6 @@ cache/
 /broadcast/*/31337/
 /broadcast/**/dry-run/
 
-# Docs
-docs/
-
 # Dotenv file
 .env
 
@@ -28,3 +25,5 @@ package-lock.json
 package-lock.backup.json
 
 app/.next-ci-test/*
+app/.next-ci-test/
+app/.next/
