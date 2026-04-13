@@ -28,3 +28,10 @@ package-lock.json
 package-lock.backup.json
 
 app/.next-ci-test/*
+app/.next-ci-test/
+app/.next/
+
+.runlogs/
+
+broadcast/
+
