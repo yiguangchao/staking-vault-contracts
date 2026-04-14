@@ -294,6 +294,34 @@ Useful higher-signal contract checks added in this project:
 - reward-rate changes preserving already accrued rewards
 - post-claim future accrual continuing correctly
 
+## Local Verification
+
+The full local user flow has been verified successfully on the Foundry local network (`chainId 31337`).
+
+Verified user flow:
+- Approve staking token allowance to the vault
+- Stake `100 BCT`
+- Accrue rewards over subsequent local blocks
+- Claim rewards successfully
+- Withdraw staked principal successfully
+
+Verified admin flow:
+- Pause the vault
+- Unpause the vault
+
+Observed expected behavior:
+- `approve` increased allowance without changing staked balance
+- `stake` reduced wallet `BCT` balance and increased `My Staked Balance`
+- `claimRewards` reduced the vault reward pool and transferred rewards to the user
+- `withdraw` returned principal to the wallet and reduced the staked balance
+- `pause` disabled restricted actions, and `unpause` restored normal behavior
+
+Local environment used:
+- Frontend: `http://localhost:3000`
+- RPC: `http://127.0.0.1:8545`
+- Network: Foundry / Anvil
+- Chain ID: `31337`
+
 ## CI
 
 GitHub Actions now runs:
