@@ -346,11 +346,11 @@ Useful diagrams and notes:
 ## Current Limitations / Next Steps
 
 This project is strong as a portfolio-quality demo, but it is not production-ready yet. Major future improvements include:
-
+ 
 - Reward campaign scheduling and richer admin controls
 - More complete frontend validation and UX polish
 - Full cleanup of historical UI copy and localization
 - More advanced Foundry tests, including invariants and fork-based checks
 - End-to-end browser tests
 - Stronger indexer resilience and reorg handling
-- Production deployment workflow and multi-environment setup
+- Production deployment workflow and multi-environment setup 
