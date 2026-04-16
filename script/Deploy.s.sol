@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+/// @notice Deploys the staking system and funds the reward pool through the
+/// vault entrypoint so deployment matches the operational flow used in the app.
+
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
