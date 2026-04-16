@@ -354,3 +354,11 @@ This project is strong as a portfolio-quality demo, but it is not production-rea
 - End-to-end browser tests
 - Stronger indexer resilience and reorg handling
 - Production deployment workflow and multi-environment setup 
+## Latest Engineering Update
+
+This repository now includes stronger verification and release-readiness work:
+
+- stateful invariant tests for `StakingVault`
+- CI checks for `forge build`, `forge test`, frontend `lint`, and frontend `build`
+- deployment flow aligned with reward pool funding
+- local Foundry user/admin flow verification recorded in this README

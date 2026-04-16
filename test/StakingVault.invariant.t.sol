@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+/// @notice Stateful invariant coverage for the staking vault.
+/// These checks protect the core accounting assumptions even while random user
+/// and admin actions are exercised by the handler.
+
 import { StdInvariant } from "forge-std/StdInvariant.sol";
 import { Test } from "forge-std/Test.sol";
 

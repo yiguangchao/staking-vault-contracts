@@ -57,3 +57,4 @@ jobs:
 
       - name: Build frontend
         run: pnpm build
+# CI validates both the protocol side and the frontend integration layer.
