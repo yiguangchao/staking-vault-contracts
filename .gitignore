@@ -8,9 +8,6 @@ cache/
 /broadcast/*/31337/
 /broadcast/**/dry-run/
 
-# Docs
-docs/
-
 # Dotenv file
 .env
 
@@ -27,8 +24,6 @@ package-lock.json
 
 package-lock.backup.json
 
-app/.next-ci-test/*
-app/.next-ci-test/
 app/.next/
 
 .runlogs/
@@ -38,3 +33,5 @@ broadcast/
 # Keep generated frontend build folders out of git, but allow docs to be committed.
 app/.next/
 app/.next-ci-test/
+
+docs/
