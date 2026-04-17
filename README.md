@@ -102,6 +102,20 @@ Why this matters:
 - Frontend validation can check admin reward-token balance and allowance before sending transactions
 - The reward-pool lifecycle is easier to explain, test, and operate
 
+## Test Coverage
+
+The repository now validates behavior at multiple levels:
+
+- unit tests for staking, withdrawals, claims, reward rate changes, admin permissions, and reward pool management
+- negative-path tests for paused actions, unauthorized access, zero amounts, and insufficient balances
+- stateful invariant tests that mix user actions and admin actions over time
+
+Current invariant coverage checks:
+
+- `totalStaked` must equal the sum of all tracked user staking balances
+- the vault stake-token balance must always cover `totalStaked`
+- tracked reward-token balances must stay conserved across admin, users, and vault
+
 ## Architecture Overview
 
 ### On-chain
@@ -118,6 +132,18 @@ Why this matters:
 - Listens to `Staked`, `Withdrawn`, `RewardPaid`, and `RewardRateUpdated`
 - Persists indexed data with Prisma
 - Serves API routes for event history and user summaries
+
+## CI Coverage
+
+GitHub Actions currently runs:
+
+- `forge build`
+- `forge test -vv`
+- `forge test --match-path test/StakingVault.invariant.t.sol -vv`
+- frontend `pnpm lint`
+- frontend `pnpm build`
+
+This keeps protocol changes and frontend integration changes validated together on every push and pull request.
 
 ## Local Development
 

@@ -4,9 +4,14 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   foundry:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -23,11 +28,15 @@ jobs:
       - name: Build
         run: forge build
 
-      - name: Test
+      - name: Run unit tests
         run: forge test -vv
+
+      - name: Run invariant tests
+        run: forge test --match-path test/StakingVault.invariant.t.sol -vv
 
   app-lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     defaults:
       run:
@@ -57,4 +66,3 @@ jobs:
 
       - name: Build frontend
         run: pnpm build
-# CI validates both the protocol side and the frontend integration layer.

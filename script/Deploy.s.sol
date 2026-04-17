@@ -17,6 +17,8 @@ contract DeployScript is Script {
     uint256 internal constant REWARD_RATE = 1 ether;
 
     function run() external returns (BootcampToken stakeToken, BootcampToken rewardToken, StakingVault vault) {
+        require(REWARD_POOL_AMOUNT <= INITIAL_REWARD_SUPPLY, "reward pool exceeds initial reward supply");
+
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
 
@@ -44,6 +46,7 @@ contract DeployScript is Script {
         console2.log("Vault:", address(vault));
         console2.log("Reward pool funded:", REWARD_POOL_AMOUNT);
         console2.log("Reward rate:", REWARD_RATE);
+        console2.log("Reward pool balance:", rewardToken.balanceOf(address(vault)));
 
         require(rewardToken.balanceOf(address(vault)) == REWARD_POOL_AMOUNT, "reward pool funding failed");
         require(vault.rewardRate() == REWARD_RATE, "reward rate not set");
