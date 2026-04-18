@@ -110,6 +110,12 @@ The repository now validates behavior at multiple levels:
 - negative-path tests for paused actions, unauthorized access, zero amounts, and insufficient balances
 - stateful invariant tests that mix user actions and admin actions over time
 
+Examples of explicit edge cases covered by unit tests:
+
+- zero-amount staking, withdrawal, and reward-pool operations
+- claiming rewards when nothing is claimable
+- withdrawing reward-pool funds to the zero address
+
 Current invariant coverage checks:
 
 - `totalStaked` must equal the sum of all tracked user staking balances
