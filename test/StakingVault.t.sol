@@ -76,6 +76,12 @@ contract StakingVaultTest is Test {
         vault.fundRewardPool(1 ether);
     }
 
+    function test_FundRewardPoolRevertsOnZeroAmount() public {
+        vm.expectRevert(StakingVault.ZeroAmount.selector);
+        vm.prank(admin);
+        vault.fundRewardPool(0);
+    }
+
     function test_AdminCanWithdrawRewardPool() public {
         uint256 withdrawalAmount = 125 ether;
 
@@ -94,6 +100,18 @@ contract StakingVaultTest is Test {
         vault.withdrawRewardPool(REWARD_FUND + 1, admin);
     }
 
+    function test_WithdrawRewardPoolRevertsOnZeroAmount() public {
+        vm.expectRevert(StakingVault.ZeroAmount.selector);
+        vm.prank(admin);
+        vault.withdrawRewardPool(0, admin);
+    }
+
+    function test_WithdrawRewardPoolRevertsOnZeroRecipient() public {
+        vm.expectRevert(StakingVault.ZeroAddress.selector);
+        vm.prank(admin);
+        vault.withdrawRewardPool(1 ether, address(0));
+    }
+
     function test_Stake() public {
         vm.prank(alice);
         vault.stake(100 ether);
@@ -102,6 +120,12 @@ contract StakingVaultTest is Test {
         assertEq(vault.totalStaked(), 100 ether);
         assertEq(stakeToken.balanceOf(address(vault)), 100 ether);
         assertEq(stakeToken.balanceOf(alice), INITIAL_USER_BALANCE - 100 ether);
+    }
+
+    function test_StakeRevertsOnZeroAmount() public {
+        vm.expectRevert(StakingVault.ZeroAmount.selector);
+        vm.prank(alice);
+        vault.stake(0);
     }
 
     function test_Withdraw() public {
@@ -114,6 +138,12 @@ contract StakingVaultTest is Test {
         assertEq(vault.balanceOf(alice), 60 ether);
         assertEq(vault.totalStaked(), 60 ether);
         assertEq(stakeToken.balanceOf(alice), INITIAL_USER_BALANCE - 60 ether);
+    }
+
+    function test_WithdrawRevertsOnZeroAmount() public {
+        vm.expectRevert(StakingVault.ZeroAmount.selector);
+        vm.prank(alice);
+        vault.withdraw(0);
     }
 
     function test_EarnedAfter10Seconds() public {
@@ -136,6 +166,12 @@ contract StakingVaultTest is Test {
 
         assertEq(rewardToken.balanceOf(alice), 10 ether);
         assertEq(vault.rewards(alice), 0);
+    }
+
+    function test_ClaimRewardsRevertsWhenNoRewardsAvailable() public {
+        vm.expectRevert(StakingVault.NoRewards.selector);
+        vm.prank(alice);
+        vault.claimRewards();
     }
 
     function test_PauseStopsClaimRewards() public {
