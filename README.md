@@ -151,6 +151,19 @@ GitHub Actions currently runs:
 
 This keeps protocol changes and frontend integration changes validated together on every push and pull request.
 
+## Troubleshooting
+
+### Frontend shows wallet connection but write actions stay disabled
+
+Check these first:
+
+- `NEXT_PUBLIC_STAKE_TOKEN_ADDRESS`
+- `NEXT_PUBLIC_REWARD_TOKEN_ADDRESS`
+- `NEXT_PUBLIC_VAULT_ADDRESS`
+- wallet network matches the configured target chain
+
+If any contract address is missing, the dashboard now shows a configuration warning and contract write buttons stay disabled on purpose.
+
 ## Local Development
 
 ### 1. Install dependencies

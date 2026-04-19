@@ -33,5 +33,4 @@ broadcast/
 # Keep generated frontend build folders out of git, but allow docs to be committed.
 app/.next/
 app/.next-ci-test/
-
 docs/
