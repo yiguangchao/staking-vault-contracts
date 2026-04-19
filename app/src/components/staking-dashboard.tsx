@@ -18,6 +18,7 @@ import { stakingVaultAbi } from '@/abi/StakingVault'
 import { HistoryPanel } from '@/components/history-panel'
 import { UserSummary } from '@/components/user-summary'
 import {
+    HAS_CONTRACT_ENV,
     REWARD_TOKEN_ADDRESS,
     STAKE_TOKEN_ADDRESS,
     VAULT_ADDRESS,
@@ -56,6 +57,7 @@ export function StakingDashboard() {
     const [rewardPoolAmount, setRewardPoolAmount] = useState('')
 
     const isWrongNetwork = isConnected && chain?.id !== TARGET_CHAIN.id
+    const isConfigReady = HAS_CONTRACT_ENV
     const targetNetworkLabel = `${TARGET_CHAIN.name} (${TARGET_CHAIN.id})`
     const currentNetworkLabel = chain ? `${chain.name} (${chain.id})` : 'Not connected'
 
@@ -541,6 +543,19 @@ export function StakingDashboard() {
                     </section>
                 )}
 
+                {!isConfigReady && (
+                    <section className="mb-6 rounded-2xl border border-rose-400/30 bg-rose-400/10 p-4">
+                        <div className="flex flex-col gap-2">
+                            <p className="font-semibold text-rose-200">Contract configuration missing</p>
+                            <p className="text-sm text-rose-100/80">
+                                This app is missing one or more contract addresses. Set
+                                `NEXT_PUBLIC_STAKE_TOKEN_ADDRESS`, `NEXT_PUBLIC_REWARD_TOKEN_ADDRESS`,
+                                and `NEXT_PUBLIC_VAULT_ADDRESS` before using contract write actions.
+                            </p>
+                        </div>
+                    </section>
+                )}
+
                 <section className="grid gap-4 md:grid-cols-4">
                     <StatCard
                         title="Vault Total Staked"
@@ -617,6 +632,7 @@ export function StakingDashboard() {
                                         onClick={handleApproveMax}
                                         disabled={
                                             !isConnected ||
+                                            !isConfigReady ||
                                             isWrongNetwork ||
                                             isWritePending ||
                                             isConfirming
@@ -662,6 +678,7 @@ export function StakingDashboard() {
                                 onClick={handleApprove}
                                 disabled={
                                     !isConnected ||
+                                    !isConfigReady ||
                                     isWrongNetwork ||
                                     amountWei <= BigInt(0) ||
                                     !needsApproval ||
@@ -676,6 +693,7 @@ export function StakingDashboard() {
                                 onClick={handleStake}
                                 disabled={
                                     !isConnected ||
+                                    !isConfigReady ||
                                     isWrongNetwork ||
                                     amountWei <= BigInt(0) ||
                                     !canStakeAmount ||
@@ -692,6 +710,7 @@ export function StakingDashboard() {
                                 onClick={handleWithdraw}
                                 disabled={
                                     !isConnected ||
+                                    !isConfigReady ||
                                     isWrongNetwork ||
                                     amountWei <= BigInt(0) ||
                                     !canWithdrawAmount ||
@@ -706,6 +725,7 @@ export function StakingDashboard() {
                                 onClick={handleClaim}
                                 disabled={
                                     !isConnected ||
+                                    !isConfigReady ||
                                     isWrongNetwork ||
                                     !canClaimRewards ||
                                     Boolean(paused) ||
@@ -784,6 +804,7 @@ export function StakingDashboard() {
                                         disabled={
                                             !Boolean(isAdmin) ||
                                             !isConnected ||
+                                            !isConfigReady ||
                                             isWrongNetwork ||
                                             rewardRateWei <= BigInt(0) ||
                                             rewardRateWei === (rewardRate ?? BigInt(0)) ||
@@ -801,6 +822,7 @@ export function StakingDashboard() {
                                             disabled={
                                                 !Boolean(isAdmin) ||
                                                 !isConnected ||
+                                                !isConfigReady ||
                                                 isWrongNetwork ||
                                                 rewardPoolAmountWei <= BigInt(0) ||
                                                 !needsRewardPoolApproval ||
@@ -815,6 +837,7 @@ export function StakingDashboard() {
                                             disabled={
                                                 !Boolean(isAdmin) ||
                                                 !isConnected ||
+                                                !isConfigReady ||
                                                 isWrongNetwork ||
                                                 rewardPoolAmountWei <= BigInt(0) ||
                                                 !canFundRewardPoolAmount ||
@@ -830,6 +853,7 @@ export function StakingDashboard() {
                                             disabled={
                                                 !Boolean(isAdmin) ||
                                                 !isConnected ||
+                                                !isConfigReady ||
                                                 isWrongNetwork ||
                                                 rewardPoolAmountWei <= BigInt(0) ||
                                                 !canWithdrawRewardPoolAmount ||
@@ -847,6 +871,7 @@ export function StakingDashboard() {
                                             disabled={
                                                 !Boolean(isPauser) ||
                                                 !isConnected ||
+                                                !isConfigReady ||
                                                 isWrongNetwork ||
                                                 Boolean(paused) ||
                                                 isWritePending ||
@@ -860,6 +885,7 @@ export function StakingDashboard() {
                                             disabled={
                                                 !Boolean(isPauser) ||
                                                 !isConnected ||
+                                                !isConfigReady ||
                                                 isWrongNetwork ||
                                                 !Boolean(paused) ||
                                                 isWritePending ||
