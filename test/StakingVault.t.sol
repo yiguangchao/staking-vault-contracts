@@ -7,6 +7,13 @@ import { StakingVault } from "../src/StakingVault.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 contract StakingVaultTest is Test {
+    event Staked(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+    event RewardPaid(address indexed user, uint256 amount);
+    event RewardRateUpdated(uint256 newRewardRate);
+    event RewardPoolFunded(address indexed funder, uint256 amount);
+    event RewardPoolWithdrawn(address indexed recipient, uint256 amount);
+
     BootcampToken internal stakeToken;
     BootcampToken internal rewardToken;
     StakingVault internal vault;
@@ -66,6 +73,18 @@ contract StakingVaultTest is Test {
         assertEq(vault.rewardPoolBalance(), REWARD_FUND + extraFunding);
     }
 
+    function test_FundRewardPoolEmitsEvent() public {
+        uint256 extraFunding = 250 ether;
+
+        vm.startPrank(admin);
+        rewardToken.mint(admin, extraFunding);
+        rewardToken.approve(address(vault), extraFunding);
+        vm.expectEmit(true, false, false, true, address(vault));
+        emit RewardPoolFunded(admin, extraFunding);
+        vault.fundRewardPool(extraFunding);
+        vm.stopPrank();
+    }
+
     function test_NonAdminCannotFundRewardPool() public {
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -90,6 +109,15 @@ contract StakingVaultTest is Test {
 
         assertEq(vault.rewardPoolBalance(), REWARD_FUND - withdrawalAmount);
         assertEq(rewardToken.balanceOf(admin), withdrawalAmount);
+    }
+
+    function test_WithdrawRewardPoolEmitsEvent() public {
+        uint256 withdrawalAmount = 125 ether;
+
+        vm.expectEmit(true, false, false, true, address(vault));
+        emit RewardPoolWithdrawn(admin, withdrawalAmount);
+        vm.prank(admin);
+        vault.withdrawRewardPool(withdrawalAmount, admin);
     }
 
     function test_WithdrawRewardPoolRevertsWhenAmountExceedsBalance() public {
@@ -122,6 +150,14 @@ contract StakingVaultTest is Test {
         assertEq(stakeToken.balanceOf(alice), INITIAL_USER_BALANCE - 100 ether);
     }
 
+    function test_StakeEmitsEvent() public {
+        vm.expectEmit(true, false, false, true, address(vault));
+        emit Staked(alice, 100 ether);
+
+        vm.prank(alice);
+        vault.stake(100 ether);
+    }
+
     function test_StakeRevertsOnZeroAmount() public {
         vm.expectRevert(StakingVault.ZeroAmount.selector);
         vm.prank(alice);
@@ -138,6 +174,17 @@ contract StakingVaultTest is Test {
         assertEq(vault.balanceOf(alice), 60 ether);
         assertEq(vault.totalStaked(), 60 ether);
         assertEq(stakeToken.balanceOf(alice), INITIAL_USER_BALANCE - 60 ether);
+    }
+
+    function test_WithdrawEmitsEvent() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.expectEmit(true, false, false, true, address(vault));
+        emit Withdrawn(alice, 40 ether);
+
+        vm.prank(alice);
+        vault.withdraw(40 ether);
     }
 
     function test_WithdrawRevertsOnZeroAmount() public {
@@ -166,6 +213,19 @@ contract StakingVaultTest is Test {
 
         assertEq(rewardToken.balanceOf(alice), 10 ether);
         assertEq(vault.rewards(alice), 0);
+    }
+
+    function test_ClaimRewardsEmitsEvent() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        vm.expectEmit(true, false, false, true, address(vault));
+        emit RewardPaid(alice, 10 ether);
+
+        vm.prank(alice);
+        vault.claimRewards();
     }
 
     function test_ClaimRewardsRevertsWhenNoRewardsAvailable() public {
@@ -251,6 +311,14 @@ contract StakingVaultTest is Test {
         vault.setRewardRate(2 ether);
 
         assertEq(vault.rewardRate(), 2 ether);
+    }
+
+    function test_SetRewardRateEmitsEvent() public {
+        vm.expectEmit(false, false, false, true, address(vault));
+        emit RewardRateUpdated(2 ether);
+
+        vm.prank(admin);
+        vault.setRewardRate(2 ether);
     }
 
     function test_NonAdminCannotSetRewardRate() public {

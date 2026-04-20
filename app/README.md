@@ -1,36 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Frontend dApp
 
-## Getting Started
+This folder contains the Next.js frontend for the staking vault demo.
 
-First, run the development server:
+## What the frontend does
+
+- connects the wallet with RainbowKit
+- reads on-chain staking and reward state with wagmi + viem
+- sends write transactions for user and admin actions
+- shows transaction feedback, network guidance, and dashboard summaries
+- queries the local indexer API for user history and summary panels
+
+## Main Features
+
+### User dashboard
+
+- approve staking token allowance
+- stake tokens
+- withdraw principal
+- claim rewards
+- view wallet balance, allowance, staked balance, and earned rewards
+
+### Admin dashboard
+
+- set reward rate
+- approve reward token allowance
+- fund reward pool
+- withdraw unused reward pool
+- pause / unpause protocol actions
+
+## Local development
+
+Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Start the frontend:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Default URL:
 
-## Learn More
+- `http://localhost:3000`
 
-To learn more about Next.js, take a look at the following resources:
+## Required frontend environment variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Recommended local values:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+NEXT_PUBLIC_APP_CHAIN=localhost
+NEXT_PUBLIC_LOCAL_RPC_URL=http://127.0.0.1:8545
+NEXT_PUBLIC_STAKE_TOKEN_ADDRESS=0x...
+NEXT_PUBLIC_REWARD_TOKEN_ADDRESS=0x...
+NEXT_PUBLIC_VAULT_ADDRESS=0x...
+```
 
-## Deploy on Vercel
+Optional variables:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your-key
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Notes
+
+- If contract addresses are missing, the UI now shows a configuration warning and disables write actions.
+- If the wallet is on the wrong network, the dashboard shows a network mismatch banner.
+- On the local Foundry chain, rewards only move when new blocks are mined.
+- Temporary CI build output under `.next-ci-test/` is ignored by both git and ESLint.

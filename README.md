@@ -115,6 +115,7 @@ Examples of explicit edge cases covered by unit tests:
 - zero-amount staking, withdrawal, and reward-pool operations
 - claiming rewards when nothing is claimable
 - withdrawing reward-pool funds to the zero address
+- event emission coverage for staking, withdrawals, claims, reward-rate updates, and reward-pool admin actions
 
 Current invariant coverage checks:
 
@@ -163,6 +164,17 @@ Check these first:
 - wallet network matches the configured target chain
 
 If any contract address is missing, the dashboard now shows a configuration warning and contract write buttons stay disabled on purpose.
+
+### Frontend lint unexpectedly scans generated files
+
+The frontend ESLint config now ignores `.next-ci-test/**` in addition to the standard `.next/**` output.
+
+If lint output still looks noisy, remove temporary build folders and rerun:
+
+```bash
+cd app
+pnpm lint
+```
 
 ## Local Development
 
