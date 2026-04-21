@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client'
 import { createPublicClient, http } from 'viem'
 import { config } from './config'
 import { prisma } from './db'
@@ -18,7 +19,7 @@ function toEventId(txHash: string, logIndex: number) {
 }
 
 async function updateUserSnapshot(
-    tx: typeof prisma,
+    tx: Prisma.TransactionClient,
     eventName: string,
     userAddress: string,
     amount: bigint

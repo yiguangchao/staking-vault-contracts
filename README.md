@@ -139,6 +139,7 @@ Current invariant coverage checks:
 - Listens to `Staked`, `Withdrawn`, `RewardPaid`, and `RewardRateUpdated`
 - Persists indexed data with Prisma
 - Serves API routes for event history and user summaries
+- Validates user-address input and caps API list sizes for safer local and testnet usage
 
 ## CI Coverage
 
@@ -175,6 +176,16 @@ If lint output still looks noisy, remove temporary build folders and rerun:
 cd app
 pnpm lint
 ```
+
+### Indexer requests fail or hang
+
+The frontend now times out indexer requests after a short window and surfaces the failure message in the UI.
+
+If history panels are failing:
+
+- confirm the indexer API is running on `http://localhost:4000`
+- check `NEXT_PUBLIC_INDEXER_API_URL` if you changed the API host
+- verify the requested wallet address is valid hex and the API is not returning `400`
 
 ## Local Development
 
