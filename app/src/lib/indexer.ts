@@ -3,6 +3,7 @@ import { formatUnits } from "viem";
 export const INDEXER_BASE_URL = (
     process.env.NEXT_PUBLIC_INDEXER_API_URL ?? "http://localhost:4000"
 ).replace(/\/$/, "");
+const INDEXER_TIMEOUT_MS = 8_000;
 
 export type IndexerEvent = {
     chainId?: number;
@@ -85,17 +86,38 @@ function sortByBlockDesc<T extends { blockNumber?: number | string; logIndex?: n
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
-    const res = await fetch(`${INDEXER_BASE_URL}${path}`, {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), INDEXER_TIMEOUT_MS);
+
+    let res: Response;
+
+    try {
+        res = await fetch(`${INDEXER_BASE_URL}${path}`, {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            signal: controller.signal,
+        });
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            throw new Error(
+                `Indexer request timed out after ${INDEXER_TIMEOUT_MS / 1000} seconds`,
+            );
+        }
+
+        throw error;
+    } finally {
+        clearTimeout(timeout);
+    }
 
     if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`Indexer request failed: ${res.status} ${res.statusText} ${text}`);
+        const payload = await res.json().catch(() => null) as
+            | { error?: string; message?: string }
+            | null;
+        const details = payload?.message || payload?.error || res.statusText;
+        throw new Error(`Indexer request failed: ${res.status} ${details}`);
     }
 
     return (await res.json()) as T;
