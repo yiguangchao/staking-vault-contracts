@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     formatDateTime,
     formatTokenAmount,
     getUserSummary,
     parseBigIntSafe,
     shortHash,
+    toIndexerErrorMessage,
     type IndexerUserSummary,
 } from "@/lib/indexer";
 
@@ -42,6 +43,11 @@ export function UserSummary({
     const [summary, setSummary] = useState<IndexerUserSummary | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [refreshNonce, setRefreshNonce] = useState(0);
+
+    const refresh = useCallback(() => {
+        setRefreshNonce((value) => value + 1);
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -63,7 +69,7 @@ export function UserSummary({
                 }
             } catch (err) {
                 if (!cancelled) {
-                    setError(err instanceof Error ? err.message : "Failed to load summary");
+                    setError(toIndexerErrorMessage(err));
                 }
             } finally {
                 if (!cancelled) {
@@ -77,7 +83,7 @@ export function UserSummary({
         return () => {
             cancelled = true;
         };
-    }, [address]);
+    }, [address, refreshNonce]);
 
     const totalStakedIn = useMemo(
         () => parseBigIntSafe(summary?.totalStakedIn),
@@ -113,15 +119,36 @@ export function UserSummary({
                 <div>
                     <div className="text-lg font-semibold text-white">User Summary</div>
                     <div className="mt-1 text-sm text-zinc-400">{shortHash(address)}</div>
+                    <div className="mt-1 text-xs text-zinc-500">
+                        This panel is built from indexed events and may update slightly after on-chain reads.
+                    </div>
                 </div>
-                {loading ? (
-                    <div className="text-xs text-zinc-400">Loading...</div>
-                ) : null}
+                <div className="flex items-center gap-2">
+                    {loading ? (
+                        <div className="text-xs text-zinc-400">Loading...</div>
+                    ) : null}
+                    <button
+                        type="button"
+                        onClick={refresh}
+                        disabled={loading}
+                        className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Refresh
+                    </button>
+                </div>
             </div>
 
             {error ? (
                 <div className="mt-4 rounded-2xl border border-red-900/40 bg-red-950/30 p-3 text-sm text-red-300">
-                    {error}
+                    <div>{error}</div>
+                    <button
+                        type="button"
+                        onClick={refresh}
+                        disabled={loading}
+                        className="mt-3 rounded-xl border border-red-800/60 bg-red-950/40 px-3 py-1 text-xs text-red-200 transition hover:bg-red-900/40 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        Retry
+                    </button>
                 </div>
             ) : null}
 

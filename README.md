@@ -140,6 +140,7 @@ Current invariant coverage checks:
 - Persists indexed data with Prisma
 - Serves API routes for event history and user summaries
 - Validates user-address input and caps API list sizes for safer local and testnet usage
+- Frontend indexer panels support manual refresh and clearer timeout / retry messaging
 
 ## CI Coverage
 
