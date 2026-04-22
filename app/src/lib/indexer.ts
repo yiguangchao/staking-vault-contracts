@@ -143,6 +143,26 @@ export async function getRewardRateHistory(): Promise<RewardRateHistoryItem[]> {
     return sortByBlockDesc(normalizeList<RewardRateHistoryItem>(data));
 }
 
+export function toIndexerErrorMessage(error: unknown): string {
+    if (!(error instanceof Error)) {
+        return "Failed to load indexer data.";
+    }
+
+    if (error.message.includes("timed out")) {
+        return "Indexer request timed out. Check whether the local API is running.";
+    }
+
+    if (error.message.includes("Invalid user address")) {
+        return "The connected address is invalid for indexer queries.";
+    }
+
+    if (error.message.includes("Failed to fetch")) {
+        return "Could not reach the indexer API. Check the local API URL and server status.";
+    }
+
+    return error.message;
+}
+
 export function shortHash(value?: string | null, left = 6, right = 4): string {
     if (!value) return "-";
     if (value.length <= left + right) return value;
