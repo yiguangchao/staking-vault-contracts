@@ -178,6 +178,7 @@ export function UserSummary({
             <div className="mt-4 flex flex-wrap gap-4 text-xs text-zinc-500">
                 <span>Events: {summary?.eventCount ?? "-"}</span>
                 <span>Updated: {formatDateTime(summary?.updatedAt ?? null)}</span>
+                <span>Source: Indexed event snapshots</span>
             </div>
         </section>
     );

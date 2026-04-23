@@ -141,6 +141,7 @@ Current invariant coverage checks:
 - Serves API routes for event history and user summaries
 - Validates user-address input and caps API list sizes for safer local and testnet usage
 - Frontend indexer panels support manual refresh and clearer timeout / retry messaging
+- Frontend indexer panels now read bounded result sets and surface indexer health information
 
 ## CI Coverage
 

@@ -42,6 +42,13 @@ export type RewardRateHistoryItem = {
     timestamp?: string;
 };
 
+export type IndexerHealth = {
+    ok?: boolean;
+    service?: string;
+    eventCount?: number | string | null;
+    snapshotCount?: number | string | null;
+};
+
 function normalizeList<T>(input: unknown): T[] {
     if (Array.isArray(input)) return input as T[];
 
@@ -123,9 +130,15 @@ async function fetchJson<T>(path: string): Promise<T> {
     return (await res.json()) as T;
 }
 
-export async function getUserEvents(userAddress: string): Promise<IndexerEvent[]> {
+function withLimit(path: string, limit?: number): string {
+    if (!limit || !Number.isFinite(limit) || limit <= 0) return path;
+    const separator = path.includes("?") ? "&" : "?";
+    return `${path}${separator}limit=${Math.trunc(limit)}`;
+}
+
+export async function getUserEvents(userAddress: string, limit?: number): Promise<IndexerEvent[]> {
     if (!userAddress) return [];
-    const data = await fetchJson<unknown>(`/events/${userAddress}`);
+    const data = await fetchJson<unknown>(withLimit(`/events/${userAddress}`, limit));
     return sortByBlockDesc(normalizeList<IndexerEvent>(data));
 }
 
@@ -138,9 +151,14 @@ export async function getUserSummary(userAddress: string): Promise<IndexerUserSu
     return normalizeOne<IndexerUserSummary>(data);
 }
 
-export async function getRewardRateHistory(): Promise<RewardRateHistoryItem[]> {
-    const data = await fetchJson<unknown>(`/reward-rate-history`);
+export async function getRewardRateHistory(limit?: number): Promise<RewardRateHistoryItem[]> {
+    const data = await fetchJson<unknown>(withLimit(`/reward-rate-history`, limit));
     return sortByBlockDesc(normalizeList<RewardRateHistoryItem>(data));
+}
+
+export async function getIndexerHealth(): Promise<IndexerHealth> {
+    const data = await fetchJson<unknown>("/health");
+    return normalizeOne<IndexerHealth>(data);
 }
 
 export function toIndexerErrorMessage(error: unknown): string {
