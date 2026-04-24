@@ -50,7 +50,7 @@ A full-stack Web3 staking demo built with Solidity, Foundry, Next.js, wagmi, vie
 ## Main Contracts
 
 ### `BootcampToken.sol`
-ERC20 token used as both the staking token and reward token in the local demo setup.
+ERC20 token implementation used for both the staking-token deployment and the reward-token deployment in the local demo setup.
 
 ### `StakingVault.sol`
 Core vault logic:
@@ -67,6 +67,10 @@ Security modules used:
 - `Pausable`
 - `ReentrancyGuard`
 - `SafeERC20`
+
+Constructor hardening:
+- rejects zero addresses
+- rejects using the same token address as both the staking and reward asset
 
 ## Main User Flow
 
