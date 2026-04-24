@@ -28,6 +28,7 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
     mapping(address => uint256) public rewards;
 
     error ZeroAddress();
+    error InvalidTokenPair();
     error ZeroAmount();
     error InsufficientBalance();
     error NoRewards();
@@ -43,6 +44,9 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
     constructor(address admin, address _stakingToken, address _rewardToken) {
         if (admin == address(0) || _stakingToken == address(0) || _rewardToken == address(0)) {
             revert ZeroAddress();
+        }
+        if (_stakingToken == _rewardToken) {
+            revert InvalidTokenPair();
         }
 
         stakingToken = IERC20(_stakingToken);

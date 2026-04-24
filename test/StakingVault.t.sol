@@ -61,6 +61,11 @@ contract StakingVaultTest is Test {
         assertTrue(vault.hasRole(vault.PAUSER_ROLE(), admin));
     }
 
+    function test_ConstructorRevertsWhenTokenPairIsIdentical() public {
+        vm.expectRevert(StakingVault.InvalidTokenPair.selector);
+        new StakingVault(admin, address(stakeToken), address(stakeToken));
+    }
+
     function test_AdminCanFundRewardPool() public {
         uint256 extraFunding = 250 ether;
 
