@@ -19,7 +19,7 @@ contract StakingVaultHandler is Test {
     address internal immutable admin;
     address[] internal actors;
 
-    uint256 internal constant INITIAL_USER_BALANCE = 1_000 ether;
+    uint256 internal constant INITIAL_USER_BALANCE = 1000 ether;
     uint256 internal constant REWARD_FUND = 10_000 ether;
 
     constructor(
@@ -136,7 +136,7 @@ contract StakingVaultInvariantTest is StdInvariant, Test {
     address internal bob = address(0xCAFE);
     address internal carol = address(0xD00D);
 
-    uint256 internal constant INITIAL_USER_BALANCE = 1_000 ether;
+    uint256 internal constant INITIAL_USER_BALANCE = 1000 ether;
     uint256 internal constant REWARD_FUND = 10_000 ether;
     uint256 internal constant REWARD_RATE = 1 ether;
     uint256 internal constant TOTAL_REWARD_MINTED = REWARD_FUND * 2;
@@ -191,14 +191,11 @@ contract StakingVaultInvariantTest is StdInvariant, Test {
     }
 
     function invariant_TrackedRewardBalancesRemainConserved() public view {
-        uint256 trackedRewardBalances =
-            rewardToken.balanceOf(admin) + rewardToken.balanceOf(address(vault)) + rewardToken.balanceOf(alice)
-                + rewardToken.balanceOf(bob) + rewardToken.balanceOf(carol);
+        uint256 trackedRewardBalances = rewardToken.balanceOf(admin) + rewardToken.balanceOf(address(vault))
+            + rewardToken.balanceOf(alice) + rewardToken.balanceOf(bob) + rewardToken.balanceOf(carol);
 
         assertEq(
-            trackedRewardBalances,
-            TOTAL_REWARD_MINTED,
-            "reward tokens should remain conserved across tracked addresses"
+            trackedRewardBalances, TOTAL_REWARD_MINTED, "reward tokens should remain conserved across tracked addresses"
         );
     }
 }

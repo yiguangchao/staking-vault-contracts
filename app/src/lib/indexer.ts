@@ -3,6 +3,7 @@ import { formatUnits } from "viem";
 export const INDEXER_BASE_URL = (
     process.env.NEXT_PUBLIC_INDEXER_API_URL ?? "http://localhost:4000"
 ).replace(/\/$/, "");
+const INDEXER_TIMEOUT_MS = 8_000;
 
 export type IndexerEvent = {
     chainId?: number;
@@ -39,6 +40,13 @@ export type RewardRateHistoryItem = {
     createdAt?: string;
     updatedAt?: string;
     timestamp?: string;
+};
+
+export type IndexerHealth = {
+    ok?: boolean;
+    service?: string;
+    eventCount?: number | string | null;
+    snapshotCount?: number | string | null;
 };
 
 function normalizeList<T>(input: unknown): T[] {
@@ -85,25 +93,52 @@ function sortByBlockDesc<T extends { blockNumber?: number | string; logIndex?: n
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
-    const res = await fetch(`${INDEXER_BASE_URL}${path}`, {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-            "Content-Type": "application/json",
-        },
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), INDEXER_TIMEOUT_MS);
+
+    let res: Response;
+
+    try {
+        res = await fetch(`${INDEXER_BASE_URL}${path}`, {
+            method: "GET",
+            cache: "no-store",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            signal: controller.signal,
+        });
+    } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+            throw new Error(
+                `Indexer request timed out after ${INDEXER_TIMEOUT_MS / 1000} seconds`,
+            );
+        }
+
+        throw error;
+    } finally {
+        clearTimeout(timeout);
+    }
 
     if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`Indexer request failed: ${res.status} ${res.statusText} ${text}`);
+        const payload = (await res.json().catch(() => null)) as
+            | { error?: string; message?: string }
+            | null;
+        const details = payload?.message || payload?.error || res.statusText;
+        throw new Error(`Indexer request failed: ${res.status} ${details}`);
     }
 
     return (await res.json()) as T;
 }
 
-export async function getUserEvents(userAddress: string): Promise<IndexerEvent[]> {
+function withLimit(path: string, limit?: number): string {
+    if (!limit || !Number.isFinite(limit) || limit <= 0) return path;
+    const separator = path.includes("?") ? "&" : "?";
+    return `${path}${separator}limit=${Math.trunc(limit)}`;
+}
+
+export async function getUserEvents(userAddress: string, limit?: number): Promise<IndexerEvent[]> {
     if (!userAddress) return [];
-    const data = await fetchJson<unknown>(`/events/${userAddress}`);
+    const data = await fetchJson<unknown>(withLimit(`/events/${userAddress}`, limit));
     return sortByBlockDesc(normalizeList<IndexerEvent>(data));
 }
 
@@ -116,9 +151,34 @@ export async function getUserSummary(userAddress: string): Promise<IndexerUserSu
     return normalizeOne<IndexerUserSummary>(data);
 }
 
-export async function getRewardRateHistory(): Promise<RewardRateHistoryItem[]> {
-    const data = await fetchJson<unknown>(`/reward-rate-history`);
+export async function getRewardRateHistory(limit?: number): Promise<RewardRateHistoryItem[]> {
+    const data = await fetchJson<unknown>(withLimit(`/reward-rate-history`, limit));
     return sortByBlockDesc(normalizeList<RewardRateHistoryItem>(data));
+}
+
+export async function getIndexerHealth(): Promise<IndexerHealth> {
+    const data = await fetchJson<unknown>("/health");
+    return normalizeOne<IndexerHealth>(data);
+}
+
+export function toIndexerErrorMessage(error: unknown): string {
+    if (!(error instanceof Error)) {
+        return "Failed to load indexer data.";
+    }
+
+    if (error.message.includes("timed out")) {
+        return "Indexer request timed out. Check whether the local API is running.";
+    }
+
+    if (error.message.includes("Invalid user address")) {
+        return "The connected address is invalid for indexer queries.";
+    }
+
+    if (error.message.includes("Failed to fetch")) {
+        return "Could not reach the indexer API. Check the local API URL and server status.";
+    }
+
+    return error.message;
 }
 
 export function shortHash(value?: string | null, left = 6, right = 4): string {
