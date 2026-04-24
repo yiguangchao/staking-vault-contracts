@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   formatDateTime,
   formatTokenAmount,
+  getIndexerHealth,
   getRewardRateHistory,
   getUserEvents,
   shortHash,
+  toIndexerErrorMessage,
   type IndexerEvent,
   type RewardRateHistoryItem,
 } from "@/lib/indexer";
@@ -16,6 +18,8 @@ type HistoryPanelProps = {
   stakingTokenDecimals?: number;
   rewardTokenDecimals?: number;
 };
+
+const RECENT_ITEMS_LIMIT = 10;
 
 function EventBadge({ eventName }: { eventName: string }) {
   const styles: Record<string, string> = {
@@ -80,6 +84,13 @@ export function HistoryPanel({
   const [rewardHistory, setRewardHistory] = useState<RewardRateHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [indexerHealthLabel, setIndexerHealthLabel] = useState<string>("Checking indexer...");
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
+  const [refreshNonce, setRefreshNonce] = useState(0);
+
+  const refresh = useCallback(() => {
+    setRefreshNonce((value) => value + 1);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,25 +100,35 @@ export function HistoryPanel({
         setEvents([]);
         setRewardHistory([]);
         setError(null);
+        setLastUpdatedAt(null);
         return;
       }
 
       try {
         setLoading(true);
         setError(null);
+        setIndexerHealthLabel("Checking indexer...");
 
-        const [userEvents, rateHistory] = await Promise.all([
-          getUserEvents(address),
-          getRewardRateHistory(),
+        const [userEvents, rateHistory, health] = await Promise.all([
+          getUserEvents(address, RECENT_ITEMS_LIMIT),
+          getRewardRateHistory(RECENT_ITEMS_LIMIT),
+          getIndexerHealth(),
         ]);
 
         if (!cancelled) {
           setEvents(userEvents);
           setRewardHistory(rateHistory);
+          setIndexerHealthLabel(
+            health.ok
+              ? `Indexer healthy - ${health.eventCount ?? 0} events - ${health.snapshotCount ?? 0} snapshots`
+              : "Indexer unavailable",
+          );
+          setLastUpdatedAt(new Date().toISOString());
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load history");
+          setError(toIndexerErrorMessage(err));
+          setIndexerHealthLabel("Indexer request failed");
         }
       } finally {
         if (!cancelled) {
@@ -121,16 +142,21 @@ export function HistoryPanel({
     return () => {
       cancelled = true;
     };
-  }, [address]);
+  }, [address, refreshNonce]);
 
-  const recentEvents = useMemo(() => events.slice(0, 10), [events]);
-  const recentRewardHistory = useMemo(() => rewardHistory.slice(0, 10), [rewardHistory]);
+  const recentEvents = useMemo(() => events.slice(0, RECENT_ITEMS_LIMIT), [events]);
+  const recentRewardHistory = useMemo(
+    () => rewardHistory.slice(0, RECENT_ITEMS_LIMIT),
+    [rewardHistory],
+  );
 
   if (!address) {
     return (
       <section className="rounded-3xl border border-zinc-800 bg-zinc-950/70 p-5">
         <div className="text-lg font-semibold text-white">History Panel</div>
-        <p className="mt-2 text-sm text-zinc-400">连接钱包后显示用户事件与 reward rate 历史。</p>
+        <p className="mt-2 text-sm text-zinc-400">
+          Connect a wallet to view indexed user events and reward rate history.
+        </p>
       </section>
     );
   }
@@ -141,13 +167,38 @@ export function HistoryPanel({
         <div>
           <div className="text-lg font-semibold text-white">History Panel</div>
           <div className="mt-1 text-sm text-zinc-400">{shortHash(address)}</div>
+          <div className="mt-1 text-xs text-zinc-500">
+            Indexer-backed history may lag behind the latest block for a short time.
+          </div>
+          <div className="mt-1 text-xs text-zinc-500">{indexerHealthLabel}</div>
+          <div className="mt-1 text-xs text-zinc-500">
+            Last refreshed: {formatDateTime(lastUpdatedAt)}
+          </div>
         </div>
-        {loading ? <div className="text-xs text-zinc-400">Loading...</div> : null}
+        <div className="flex items-center gap-2">
+          {loading ? <div className="text-xs text-zinc-400">Loading...</div> : null}
+          <button
+            type="button"
+            onClick={refresh}
+            disabled={loading}
+            className="rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs text-zinc-300 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
       {error ? (
         <div className="mt-4 rounded-2xl border border-red-900/40 bg-red-950/30 p-3 text-sm text-red-300">
-          {error}
+          <div>{error}</div>
+          <button
+            type="button"
+            onClick={refresh}
+            disabled={loading}
+            className="mt-3 rounded-xl border border-red-800/60 bg-red-950/40 px-3 py-1 text-xs text-red-200 transition hover:bg-red-900/40 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Retry
+          </button>
         </div>
       ) : null}
 
@@ -155,11 +206,13 @@ export function HistoryPanel({
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
           <SectionTitle
             title="Recent User Events"
-            subtitle="Staked / Withdrawn / RewardPaid"
+            subtitle={`Showing latest ${RECENT_ITEMS_LIMIT} user events`}
           />
 
           {recentEvents.length === 0 ? (
-            <div className="text-sm text-zinc-500">暂无用户事件。</div>
+            <div className="text-sm text-zinc-500">
+              No indexed user events yet. Submit a transaction or refresh after the indexer catches up.
+            </div>
           ) : (
             <div className="space-y-3">
               {recentEvents.map((event, index) => (
@@ -192,11 +245,13 @@ export function HistoryPanel({
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
           <SectionTitle
             title="Reward Rate History"
-            subtitle="RewardRateUpdated 事件历史"
+            subtitle={`Showing latest ${RECENT_ITEMS_LIMIT} reward rate updates`}
           />
 
           {recentRewardHistory.length === 0 ? (
-            <div className="text-sm text-zinc-500">暂无 reward rate 历史。</div>
+            <div className="text-sm text-zinc-500">
+              No reward rate updates have been indexed yet.
+            </div>
           ) : (
             <div className="space-y-3">
               {recentRewardHistory.map((item, index) => (
