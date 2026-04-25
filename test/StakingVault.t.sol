@@ -220,6 +220,23 @@ contract StakingVaultTest is Test {
         assertEq(vault.rewards(alice), 0);
     }
 
+    function test_ClaimRewardsDoesNotChangePrincipalAccounting() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        uint256 totalStakedBefore = vault.totalStaked();
+        uint256 userBalanceBefore = vault.balanceOf(alice);
+
+        vm.prank(alice);
+        vault.claimRewards();
+
+        assertEq(vault.totalStaked(), totalStakedBefore);
+        assertEq(vault.balanceOf(alice), userBalanceBefore);
+        assertEq(stakeToken.balanceOf(address(vault)), totalStakedBefore);
+    }
+
     function test_ClaimRewardsEmitsEvent() public {
         vm.prank(alice);
         vault.stake(100 ether);

@@ -126,6 +126,7 @@ Current invariant coverage checks:
 - `totalStaked` must equal the sum of all tracked user staking balances
 - the vault stake-token balance must always cover `totalStaked`
 - tracked reward-token balances must stay conserved across admin, users, and vault
+- `rewardPoolBalance()` must always match the vault's actual reward-token balance
 
 ## Architecture Overview
 
@@ -228,6 +229,7 @@ Use the deployment script in `script/Deploy.s.sol` to deploy local contracts if 
 - approves the vault for reward-pool funding
 - funds the reward pool via `fundRewardPool`
 - sets the initial `rewardRate`
+- asserts post-deploy balances so configuration mistakes fail early
 
 Local broadcast example:
 ```bash
@@ -367,6 +369,7 @@ Useful higher-signal contract checks added in this project:
 - paused claim revert path
 - reward-rate changes preserving already accrued rewards
 - post-claim future accrual continuing correctly
+- reward claims leaving staked principal accounting unchanged
 
 ## Local Verification
 

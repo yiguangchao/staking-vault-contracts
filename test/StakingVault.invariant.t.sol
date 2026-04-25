@@ -201,4 +201,12 @@ contract StakingVaultInvariantTest is StdInvariant, Test {
             "reward tokens should remain conserved across tracked addresses"
         );
     }
+
+    function invariant_RewardPoolViewMatchesRewardTokenBalance() public view {
+        assertEq(
+            vault.rewardPoolBalance(),
+            rewardToken.balanceOf(address(vault)),
+            "reward pool view must match the actual reward token balance"
+        );
+    }
 }

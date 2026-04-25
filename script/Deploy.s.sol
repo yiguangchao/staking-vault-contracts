@@ -48,7 +48,14 @@ contract DeployScript is Script {
         console2.log("Reward rate:", REWARD_RATE);
         console2.log("Reward pool balance:", rewardToken.balanceOf(address(vault)));
 
+        require(address(stakeToken) != address(rewardToken), "stake/reward token addresses must differ");
         require(rewardToken.balanceOf(address(vault)) == REWARD_POOL_AMOUNT, "reward pool funding failed");
+        require(vault.rewardPoolBalance() == REWARD_POOL_AMOUNT, "reward pool view mismatch");
+        require(stakeToken.balanceOf(admin) == INITIAL_STAKE_SUPPLY, "stake token admin balance mismatch");
+        require(
+            rewardToken.balanceOf(admin) == INITIAL_REWARD_SUPPLY - REWARD_POOL_AMOUNT,
+            "reward token admin balance mismatch"
+        );
         require(vault.rewardRate() == REWARD_RATE, "reward rate not set");
     }
 }
