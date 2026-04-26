@@ -145,6 +145,7 @@ Current invariant coverage checks:
 - Persists indexed data with Prisma
 - Serves API routes for event history and user summaries
 - Validates user-address input and caps API list sizes for safer local and testnet usage
+- Supports bounded `limit` and `offset` pagination on history-style endpoints
 - Frontend indexer panels support manual refresh and clearer timeout / retry messaging
 - Frontend indexer panels now read bounded result sets and surface indexer health information
 
@@ -193,6 +194,7 @@ If history panels are failing:
 - confirm the indexer API is running on `http://localhost:4000`
 - check `NEXT_PUBLIC_INDEXER_API_URL` if you changed the API host
 - verify the requested wallet address is valid hex and the API is not returning `400`
+- use `/health` to confirm the indexer is alive and inspect `serverTime`, `eventCount`, and API limits
 
 ## Local Development
 

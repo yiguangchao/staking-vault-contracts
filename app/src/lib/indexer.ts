@@ -47,6 +47,14 @@ export type IndexerHealth = {
     service?: string;
     eventCount?: number | string | null;
     snapshotCount?: number | string | null;
+    defaultLimit?: number | string | null;
+    maxLimit?: number | string | null;
+    serverTime?: string | null;
+};
+
+export type IndexerListOptions = {
+    limit?: number;
+    offset?: number;
 };
 
 function normalizeList<T>(input: unknown): T[] {
@@ -130,15 +138,35 @@ async function fetchJson<T>(path: string): Promise<T> {
     return (await res.json()) as T;
 }
 
-function withLimit(path: string, limit?: number): string {
-    if (!limit || !Number.isFinite(limit) || limit <= 0) return path;
+function withPagination(path: string, options?: number | IndexerListOptions): string {
+    if (options == null) return path;
+
+    const normalized = typeof options === "number" ? { limit: options } : options;
+    const params = new URLSearchParams();
+
+    if (normalized.limit && Number.isFinite(normalized.limit) && normalized.limit > 0) {
+        params.set("limit", String(Math.trunc(normalized.limit)));
+    }
+
+    if (
+        normalized.offset != null &&
+        Number.isFinite(normalized.offset) &&
+        normalized.offset >= 0
+    ) {
+        params.set("offset", String(Math.trunc(normalized.offset)));
+    }
+
+    if (params.size === 0) return path;
     const separator = path.includes("?") ? "&" : "?";
-    return `${path}${separator}limit=${Math.trunc(limit)}`;
+    return `${path}${separator}${params.toString()}`;
 }
 
-export async function getUserEvents(userAddress: string, limit?: number): Promise<IndexerEvent[]> {
+export async function getUserEvents(
+    userAddress: string,
+    options?: number | IndexerListOptions,
+): Promise<IndexerEvent[]> {
     if (!userAddress) return [];
-    const data = await fetchJson<unknown>(withLimit(`/events/${userAddress}`, limit));
+    const data = await fetchJson<unknown>(withPagination(`/events/${userAddress}`, options));
     return sortByBlockDesc(normalizeList<IndexerEvent>(data));
 }
 
@@ -151,8 +179,10 @@ export async function getUserSummary(userAddress: string): Promise<IndexerUserSu
     return normalizeOne<IndexerUserSummary>(data);
 }
 
-export async function getRewardRateHistory(limit?: number): Promise<RewardRateHistoryItem[]> {
-    const data = await fetchJson<unknown>(withLimit(`/reward-rate-history`, limit));
+export async function getRewardRateHistory(
+    options?: number | IndexerListOptions,
+): Promise<RewardRateHistoryItem[]> {
+    const data = await fetchJson<unknown>(withPagination(`/reward-rate-history`, options));
     return sortByBlockDesc(normalizeList<RewardRateHistoryItem>(data));
 }
 
