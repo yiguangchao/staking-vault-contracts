@@ -6,6 +6,8 @@ const app = express();
 const PORT = 4000;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
+const DEFAULT_OFFSET = 0;
+const MAX_OFFSET = 5_000;
 
 app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
@@ -26,6 +28,12 @@ function normalizeLimit(raw: unknown, fallback = DEFAULT_LIMIT) {
   const parsed = Number(raw ?? fallback);
   if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
   return Math.min(Math.trunc(parsed), MAX_LIMIT);
+}
+
+function normalizeOffset(raw: unknown, fallback = DEFAULT_OFFSET) {
+  const parsed = Number(raw ?? fallback);
+  if (!Number.isFinite(parsed) || parsed < 0) return fallback;
+  return Math.min(Math.trunc(parsed), MAX_OFFSET);
 }
 
 function normalizeAddress(raw: string | string[] | undefined) {
@@ -64,15 +72,20 @@ app.get("/health", asyncRoute(async (_req, res) => {
     service: "staking-vault-indexer",
     eventCount,
     snapshotCount,
+    defaultLimit: DEFAULT_LIMIT,
+    maxLimit: MAX_LIMIT,
+    serverTime: new Date().toISOString(),
   });
 }));
 
 app.get("/events", asyncRoute(async (req, res) => {
   const limit = normalizeLimit(req.query.limit);
+  const offset = normalizeOffset(req.query.offset);
 
   const events = await prisma.vaultEvent.findMany({
     orderBy: [{ blockNumber: "desc" }, { logIndex: "desc" }],
     take: limit,
+    skip: offset,
   });
 
   return sendJson(res, events);
@@ -81,6 +94,7 @@ app.get("/events", asyncRoute(async (req, res) => {
 app.get("/events/:userAddress", asyncRoute(async (req, res) => {
   const userAddress = normalizeAddress(req.params.userAddress);
   const limit = normalizeLimit(req.query.limit, 50);
+  const offset = normalizeOffset(req.query.offset);
 
   if (!isHexAddress(userAddress)) {
     return sendJson(res, { error: "Invalid user address" }, 400);
@@ -90,6 +104,7 @@ app.get("/events/:userAddress", asyncRoute(async (req, res) => {
     where: { userAddress },
     orderBy: [{ blockNumber: "desc" }, { logIndex: "desc" }],
     take: limit,
+    skip: offset,
   });
 
   return sendJson(res, events);
@@ -133,6 +148,7 @@ app.get("/users/:userAddress/summary", asyncRoute(async (req, res) => {
 
 app.get("/reward-rate-history", asyncRoute(async (req, res) => {
   const limit = normalizeLimit(req.query.limit, 50);
+  const offset = normalizeOffset(req.query.offset);
 
   const history = await prisma.vaultEvent.findMany({
     where: {
@@ -140,6 +156,7 @@ app.get("/reward-rate-history", asyncRoute(async (req, res) => {
     },
     orderBy: [{ blockNumber: "desc" }, { logIndex: "desc" }],
     take: limit,
+    skip: offset,
   });
 
   return sendJson(res, history);
