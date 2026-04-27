@@ -102,7 +102,7 @@ Admin withdrawal flow:
 3. The vault transfers unused reward tokens back to the chosen recipient
 
 Why this matters:
-- The protocol now has a formal funding path instead of an implicit “send tokens to the contract” step
+- The protocol now has a formal funding path instead of an implicit “send tokens to the contract�?step
 - Frontend validation can check admin reward-token balance and allowance before sending transactions
 - The reward-pool lifecycle is easier to explain, test, and operate
 
@@ -147,7 +147,7 @@ Current invariant coverage checks:
 - Validates user-address input and caps API list sizes for safer local and testnet usage
 - Supports bounded `limit` and `offset` pagination on history-style endpoints
 - Frontend indexer panels support manual refresh and clearer timeout / retry messaging
-- Frontend indexer panels now read bounded result sets and surface indexer health information
+- Frontend indexer panels now read bounded result sets, surface indexer health information, and support offset-based `Load more` actions
 
 ## CI Coverage
 
@@ -441,3 +441,4 @@ This repository now includes stronger verification and release-readiness work:
 - CI checks for `forge build`, `forge test`, frontend `lint`, and frontend `build`
 - deployment flow aligned with reward pool funding
 - local Foundry user/admin flow verification recorded in this README
+
