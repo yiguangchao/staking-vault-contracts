@@ -48,6 +48,12 @@ Default URL:
 
 ## Required frontend environment variables
 
+Create a local file from the template:
+
+```bash
+cp .env.example .env.local
+```
+
 Recommended local values:
 
 ```bash
@@ -63,7 +69,10 @@ Optional variables:
 ```bash
 NEXT_PUBLIC_SEPOLIA_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/your-key
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your_walletconnect_project_id
+NEXT_PUBLIC_INDEXER_API_URL=http://localhost:4000
 ```
+
+For Sepolia, switch `NEXT_PUBLIC_APP_CHAIN` to `sepolia` and replace all three contract addresses with the Sepolia deployment addresses. Do not mix local Foundry addresses with Sepolia RPC settings.
 
 ## Notes
 
