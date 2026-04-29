@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "validate:env": "node tools/validate-env.mjs .env",
+    "validate:env:example": "node tools/validate-env.mjs .env.example --allow-placeholders"
+  },
   "dependencies": {
     "@walletconnect/ethereum-provider": "^2.23.8"
   }
