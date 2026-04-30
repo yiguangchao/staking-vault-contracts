@@ -6,6 +6,7 @@
     "dev": "tsx watch src/api.ts",
     "sync": "tsx src/sync.ts",
     "listener": "tsx src/listener.ts",
+    "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev"
   },

@@ -50,6 +50,41 @@ jobs:
       - name: Run invariant tests
         run: forge test --match-path test/StakingVault.invariant.t.sol -vv
 
+  indexer-typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: file:./dev.db
+
+    defaults:
+      run:
+        working-directory: indexer
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: indexer/pnpm-lock.yaml
+
+      - name: Install indexer dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm prisma:generate
+
+      - name: Typecheck indexer
+        run: pnpm typecheck
+
   app-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 15
