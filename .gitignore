@@ -37,3 +37,6 @@ app/.next-ci-test/
 # Keep old local docs out by default, but allow curated docs to be committed.
 
 docs/
+
+# OS generated files
+.DS_Store
