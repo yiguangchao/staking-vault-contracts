@@ -25,9 +25,7 @@ package-lock.json
 package-lock.backup.json
 
 app/.next/
-
 .runlogs/
-
 broadcast/
 
 # Keep generated frontend build folders out of git.
