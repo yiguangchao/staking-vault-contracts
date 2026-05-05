@@ -22,6 +22,7 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
 
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
+    uint256 public unpaidRewards; // aggregate rewards accrued but not yet paid out
 
     mapping(address => uint256) public balanceOf;
     mapping(address => uint256) public userRewardPerTokenPaid;
@@ -33,6 +34,7 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
     error InsufficientBalance();
     error NoRewards();
     error InsufficientRewardPool(uint256 available, uint256 required);
+    error InsufficientWithdrawableRewards(uint256 withdrawable, uint256 requested);
 
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
@@ -57,6 +59,13 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
     }
 
     modifier updateReward(address account) {
+        if (totalStaked > 0) {
+            uint256 delta = block.timestamp - lastUpdateTime;
+            if (delta > 0 && rewardRate > 0) {
+                unpaidRewards += delta * rewardRate;
+            }
+        }
+
         rewardPerTokenStored = rewardPerToken();
         lastUpdateTime = block.timestamp;
 
@@ -98,7 +107,8 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
         if (amount == 0) revert ZeroAmount();
 
         uint256 availableRewards = rewardPoolBalance();
-        if (availableRewards < amount) revert InsufficientRewardPool(availableRewards, amount);
+        uint256 withdrawable = availableRewards > unpaidRewards ? (availableRewards - unpaidRewards) : 0;
+        if (withdrawable < amount) revert InsufficientWithdrawableRewards(withdrawable, amount);
 
         rewardToken.safeTransfer(to, amount);
 
@@ -135,6 +145,7 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
         if (availableRewards < reward) revert InsufficientRewardPool(availableRewards, reward);
 
         rewards[msg.sender] = 0;
+        unpaidRewards -= reward;
         rewardToken.safeTransfer(msg.sender, reward);
 
         emit RewardPaid(msg.sender, reward);

@@ -116,6 +116,45 @@ contract StakingVaultTest is Test {
         assertEq(rewardToken.balanceOf(admin), withdrawalAmount);
     }
 
+    function test_WithdrawRewardPoolCannotStealAccruedUserRewards() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        uint256 expectedReward = 10 ether;
+        assertEq(vault.earned(alice), expectedReward);
+
+        // `unpaidRewards` updates on state-changing calls through `updateReward`.
+        uint256 currentRate = vault.rewardRate();
+        vm.prank(admin);
+        vault.setRewardRate(currentRate);
+
+        // Admin should not be able to withdraw rewards that are already accrued for stakers.
+        uint256 withdrawable = vault.rewardPoolBalance() - vault.unpaidRewards();
+        assertEq(withdrawable, REWARD_FUND - expectedReward);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(StakingVault.InsufficientWithdrawableRewards.selector, withdrawable, withdrawable + 1)
+        );
+        vm.prank(admin);
+        vault.withdrawRewardPool(withdrawable + 1, admin);
+
+        // Withdrawing exactly the surplus should still succeed.
+        vm.prank(admin);
+        vault.withdrawRewardPool(withdrawable, admin);
+
+        assertEq(vault.rewardPoolBalance(), expectedReward);
+        assertEq(vault.unpaidRewards(), expectedReward);
+
+        vm.prank(alice);
+        vault.claimRewards();
+
+        assertEq(rewardToken.balanceOf(alice), expectedReward);
+        assertEq(vault.unpaidRewards(), 0);
+        assertEq(vault.rewardPoolBalance(), 0);
+    }
+
     function test_WithdrawRewardPoolEmitsEvent() public {
         uint256 withdrawalAmount = 125 ether;
 
@@ -127,7 +166,9 @@ contract StakingVaultTest is Test {
 
     function test_WithdrawRewardPoolRevertsWhenAmountExceedsBalance() public {
         vm.expectRevert(
-            abi.encodeWithSelector(StakingVault.InsufficientRewardPool.selector, REWARD_FUND, REWARD_FUND + 1)
+            abi.encodeWithSelector(
+                StakingVault.InsufficientWithdrawableRewards.selector, REWARD_FUND, REWARD_FUND + 1
+            )
         );
         vm.prank(admin);
         vault.withdrawRewardPool(REWARD_FUND + 1, admin);
