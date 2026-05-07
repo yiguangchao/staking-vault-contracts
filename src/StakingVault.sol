@@ -108,7 +108,12 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
         emit RewardPoolFunded(msg.sender, amount);
     }
 
-    function withdrawRewardPool(uint256 amount, address to) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+    function withdrawRewardPool(uint256 amount, address to)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        nonReentrant
+        updateReward(address(0))
+    {
         if (to == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
 
