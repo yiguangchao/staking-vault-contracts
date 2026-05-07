@@ -116,6 +116,52 @@ contract StakingVaultTest is Test {
         assertEq(rewardToken.balanceOf(admin), withdrawalAmount);
     }
 
+    function test_WithdrawableRewardPoolBalanceExcludesUnpaidRewards() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        // Sync the global accumulator so `unpaidRewards` is updated.
+        uint256 currentRate = vault.rewardRate();
+        vm.prank(admin);
+        vault.setRewardRate(currentRate);
+
+        uint256 expectedReward = 10 ether;
+        assertEq(vault.unpaidRewards(), expectedReward);
+        assertEq(vault.withdrawableRewardPoolBalance(), REWARD_FUND - expectedReward);
+    }
+
+    function test_WithdrawRewardPoolUpdatesUnpaidRewardsBeforeWithdrawing() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        // No state-changing calls after this warp, so `unpaidRewards` is stale until an update happens.
+        vm.warp(block.timestamp + 10);
+
+        uint256 expectedReward = 10 ether;
+        assertEq(vault.earned(alice), expectedReward);
+        assertEq(vault.unpaidRewards(), 0);
+
+        // `withdrawRewardPool` should update global reward accounting first.
+        uint256 withdrawableAfterUpdate = REWARD_FUND - expectedReward;
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                StakingVault.InsufficientWithdrawableRewards.selector, withdrawableAfterUpdate, REWARD_FUND
+            )
+        );
+        vm.prank(admin);
+        vault.withdrawRewardPool(REWARD_FUND, admin);
+
+        vm.prank(admin);
+        vault.withdrawRewardPool(withdrawableAfterUpdate, admin);
+
+        // Enough reward tokens remain for Alice to claim.
+        vm.prank(alice);
+        vault.claimRewards();
+        assertEq(rewardToken.balanceOf(alice), expectedReward);
+    }
+
     function test_WithdrawRewardPoolCannotStealAccruedUserRewards() public {
         vm.prank(alice);
         vault.stake(100 ether);
@@ -131,7 +177,7 @@ contract StakingVaultTest is Test {
         vault.setRewardRate(currentRate);
 
         // Admin should not be able to withdraw rewards that are already accrued for stakers.
-        uint256 withdrawable = vault.rewardPoolBalance() - vault.unpaidRewards();
+        uint256 withdrawable = vault.withdrawableRewardPoolBalance();
         assertEq(withdrawable, REWARD_FUND - expectedReward);
 
         vm.expectRevert(

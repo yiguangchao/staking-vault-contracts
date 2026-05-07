@@ -94,6 +94,12 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
         return rewardToken.balanceOf(address(this));
     }
 
+    /// @notice Amount of reward tokens the admin can withdraw without touching already-accrued (but unpaid) rewards.
+    function withdrawableRewardPoolBalance() public view returns (uint256) {
+        uint256 availableRewards = rewardPoolBalance();
+        return availableRewards > unpaidRewards ? (availableRewards - unpaidRewards) : 0;
+    }
+
     function fundRewardPool(uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
         if (amount == 0) revert ZeroAmount();
 
@@ -102,12 +108,16 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
         emit RewardPoolFunded(msg.sender, amount);
     }
 
-    function withdrawRewardPool(uint256 amount, address to) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+    function withdrawRewardPool(uint256 amount, address to)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        nonReentrant
+        updateReward(address(0))
+    {
         if (to == address(0)) revert ZeroAddress();
         if (amount == 0) revert ZeroAmount();
 
-        uint256 availableRewards = rewardPoolBalance();
-        uint256 withdrawable = availableRewards > unpaidRewards ? (availableRewards - unpaidRewards) : 0;
+        uint256 withdrawable = withdrawableRewardPoolBalance();
         if (withdrawable < amount) revert InsufficientWithdrawableRewards(withdrawable, amount);
 
         rewardToken.safeTransfer(to, amount);
