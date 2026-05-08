@@ -162,6 +162,27 @@ contract StakingVaultTest is Test {
         assertEq(rewardToken.balanceOf(alice), expectedReward);
     }
 
+    function test_CurrentUnpaidRewardsIncludesPendingAccrual() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        // No state-changing calls yet, so `unpaidRewards` stays stale...
+        assertEq(vault.unpaidRewards(), 0);
+        // ...but the "current" view should include pending accrual since last update.
+        assertEq(vault.currentUnpaidRewards(), 10 ether);
+        assertEq(vault.currentWithdrawableRewardPoolBalance(), REWARD_FUND - 10 ether);
+
+        // After a global update, `unpaidRewards` catches up to the current view.
+        uint256 currentRate = vault.rewardRate();
+        vm.prank(admin);
+        vault.setRewardRate(currentRate);
+
+        assertEq(vault.unpaidRewards(), 10 ether);
+        assertEq(vault.withdrawableRewardPoolBalance(), REWARD_FUND - 10 ether);
+    }
+
     function test_WithdrawRewardPoolCannotStealAccruedUserRewards() public {
         vm.prank(alice);
         vault.stake(100 ether);
