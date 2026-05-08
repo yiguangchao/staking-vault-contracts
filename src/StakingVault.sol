@@ -94,10 +94,28 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
         return rewardToken.balanceOf(address(this));
     }
 
+    /// @notice Returns the total rewards accrued system-wide but not yet paid out,
+    /// including rewards accumulated since the last update.
+    function currentUnpaidRewards() public view returns (uint256) {
+        if (totalStaked == 0) return unpaidRewards;
+
+        uint256 delta = block.timestamp - lastUpdateTime;
+        if (delta == 0 || rewardRate == 0) return unpaidRewards;
+
+        return unpaidRewards + (delta * rewardRate);
+    }
+
     /// @notice Amount of reward tokens the admin can withdraw without touching already-accrued (but unpaid) rewards.
     function withdrawableRewardPoolBalance() public view returns (uint256) {
         uint256 availableRewards = rewardPoolBalance();
         return availableRewards > unpaidRewards ? (availableRewards - unpaidRewards) : 0;
+    }
+
+    /// @notice Same as `withdrawableRewardPoolBalance()`, but accounts for rewards accrued since the last update.
+    function currentWithdrawableRewardPoolBalance() public view returns (uint256) {
+        uint256 availableRewards = rewardPoolBalance();
+        uint256 reserve = currentUnpaidRewards();
+        return availableRewards > reserve ? (availableRewards - reserve) : 0;
     }
 
     function fundRewardPool(uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
