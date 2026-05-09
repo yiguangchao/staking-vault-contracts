@@ -23,6 +23,20 @@ export const stakingVaultAbi = [
     {
         type: 'function',
         stateMutability: 'view',
+        name: 'currentUnpaidRewards',
+        inputs: [],
+        outputs: [{ name: '', type: 'uint256' }],
+    },
+    {
+        type: 'function',
+        stateMutability: 'view',
+        name: 'currentWithdrawableRewardPoolBalance',
+        inputs: [],
+        outputs: [{ name: '', type: 'uint256' }],
+    },
+    {
+        type: 'function',
+        stateMutability: 'view',
         name: 'totalStaked',
         inputs: [],
         outputs: [{ name: '', type: 'uint256' }],
