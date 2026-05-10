@@ -136,6 +136,7 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
         if (amount == 0) revert ZeroAmount();
 
         uint256 withdrawable = withdrawableRewardPoolBalance();
+        
         if (withdrawable < amount) revert InsufficientWithdrawableRewards(withdrawable, amount);
 
         rewardToken.safeTransfer(to, amount);
