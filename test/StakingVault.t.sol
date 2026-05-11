@@ -202,7 +202,9 @@ contract StakingVaultTest is Test {
         assertEq(withdrawable, REWARD_FUND - expectedReward);
 
         vm.expectRevert(
-            abi.encodeWithSelector(StakingVault.InsufficientWithdrawableRewards.selector, withdrawable, withdrawable + 1)
+            abi.encodeWithSelector(
+                StakingVault.InsufficientWithdrawableRewards.selector, withdrawable, withdrawable + 1
+            )
         );
         vm.prank(admin);
         vault.withdrawRewardPool(withdrawable + 1, admin);
@@ -233,9 +235,7 @@ contract StakingVaultTest is Test {
 
     function test_WithdrawRewardPoolRevertsWhenAmountExceedsBalance() public {
         vm.expectRevert(
-            abi.encodeWithSelector(
-                StakingVault.InsufficientWithdrawableRewards.selector, REWARD_FUND, REWARD_FUND + 1
-            )
+            abi.encodeWithSelector(StakingVault.InsufficientWithdrawableRewards.selector, REWARD_FUND, REWARD_FUND + 1)
         );
         vm.prank(admin);
         vault.withdrawRewardPool(REWARD_FUND + 1, admin);
