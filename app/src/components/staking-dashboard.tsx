@@ -186,6 +186,21 @@ export function StakingDashboard() {
         functionName: 'rewardPoolBalance',
     })
 
+    const { data: currentUnpaidRewards, refetch: refetchCurrentUnpaidRewards } = useReadContract({
+        address: VAULT_ADDRESS,
+        abi: stakingVaultAbi,
+        functionName: 'currentUnpaidRewards',
+    })
+
+    const {
+        data: currentWithdrawableRewardPoolBalance,
+        refetch: refetchCurrentWithdrawableRewardPoolBalance,
+    } = useReadContract({
+        address: VAULT_ADDRESS,
+        abi: stakingVaultAbi,
+        functionName: 'currentWithdrawableRewardPoolBalance',
+    })
+
     const { data: paused, refetch: refetchPaused } = useReadContract({
         address: VAULT_ADDRESS,
         abi: stakingVaultAbi,
@@ -242,7 +257,8 @@ export function StakingDashboard() {
     const canClaimRewards = (userEarned ?? BigInt(0)) > BigInt(0)
     const needsRewardPoolApproval = (rewardTokenAllowance ?? BigInt(0)) < rewardPoolAmountWei
     const canFundRewardPoolAmount = rewardPoolAmountWei <= (userRewardTokenBalance ?? BigInt(0))
-    const canWithdrawRewardPoolAmount = rewardPoolAmountWei <= (rewardPoolBalance ?? BigInt(0))
+    const withdrawableRewardPool = currentWithdrawableRewardPoolBalance ?? rewardPoolBalance ?? BigInt(0)
+    const canWithdrawRewardPoolAmount = rewardPoolAmountWei <= withdrawableRewardPool
     const canShowAdminPanel = Boolean(isAdmin) || Boolean(isPauser)
 
     const refreshAll = useCallback(async () => {
@@ -259,6 +275,8 @@ export function StakingDashboard() {
             refetchTotalStaked(),
             refetchRewardRate(),
             refetchRewardPoolBalance(),
+            refetchCurrentUnpaidRewards(),
+            refetchCurrentWithdrawableRewardPoolBalance(),
             refetchPaused(),
         ])
     }, [
@@ -274,6 +292,8 @@ export function StakingDashboard() {
         refetchTotalStaked,
         refetchRewardRate,
         refetchRewardPoolBalance,
+        refetchCurrentUnpaidRewards,
+        refetchCurrentWithdrawableRewardPoolBalance,
         refetchPaused,
     ])
 
@@ -456,8 +476,8 @@ export function StakingDashboard() {
         if (!isConnected || isWrongNetwork || rewardPoolAmountWei <= BigInt(0)) return
 
         if (!canWithdrawRewardPoolAmount) {
-            toast.error('Withdraw amount exceeds reward pool balance', {
-                description: `Current reward pool balance: ${safeFormat(rewardPoolBalance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`,
+            toast.error('Withdraw amount exceeds withdrawable reward pool balance', {
+                description: `Withdrawable now: ${safeFormat(withdrawableRewardPool, decimals)} ${String(rewardSymbol ?? 'RWD')}`,
             })
             return
         }
@@ -770,6 +790,14 @@ export function StakingDashboard() {
                                     <InfoRow
                                         label="Reward Pool Balance"
                                         value={`${safeFormat(rewardPoolBalance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
+                                    />
+                                    <InfoRow
+                                        label="Current Unpaid Rewards (est.)"
+                                        value={`${safeFormat(currentUnpaidRewards as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
+                                    />
+                                    <InfoRow
+                                        label="Current Withdrawable Reward Pool (est.)"
+                                        value={`${safeFormat(withdrawableRewardPool, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
                                     />
                                 </div>
 
