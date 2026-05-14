@@ -33,9 +33,12 @@ broadcast/
 # Keep generated frontend build folders out of git.
 app/.next/
 app/.next-ci-test/
+app/.next-ci-test-*/
+app/.next-*/
 
-# Keep old local docs out by default, but allow curated docs to be committed.
-
+# Docs are part of the repo (diagrams + notes). If you need to keep local drafts,
+# create a separate folder like docs/_local/ and ignore it here.
+docs/_local/
 docs/
 
 # OS generated files

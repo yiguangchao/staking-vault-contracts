@@ -257,7 +257,13 @@ export function StakingDashboard() {
     const canClaimRewards = (userEarned ?? BigInt(0)) > BigInt(0)
     const needsRewardPoolApproval = (rewardTokenAllowance ?? BigInt(0)) < rewardPoolAmountWei
     const canFundRewardPoolAmount = rewardPoolAmountWei <= (userRewardTokenBalance ?? BigInt(0))
-    const withdrawableRewardPool = currentWithdrawableRewardPoolBalance ?? rewardPoolBalance ?? BigInt(0)
+    const rewardPoolBalanceWei = rewardPoolBalance ?? BigInt(0)
+    const reservedUnpaidRewardsWei = currentUnpaidRewards ?? BigInt(0)
+    const withdrawableRewardPool =
+        currentWithdrawableRewardPoolBalance ??
+        (rewardPoolBalanceWei > reservedUnpaidRewardsWei
+            ? rewardPoolBalanceWei - reservedUnpaidRewardsWei
+            : BigInt(0))
     const canWithdrawRewardPoolAmount = rewardPoolAmountWei <= withdrawableRewardPool
     const canShowAdminPanel = Boolean(isAdmin) || Boolean(isPauser)
 
@@ -477,7 +483,7 @@ export function StakingDashboard() {
 
         if (!canWithdrawRewardPoolAmount) {
             toast.error('Withdraw amount exceeds withdrawable reward pool balance', {
-                description: `Withdrawable now: ${safeFormat(withdrawableRewardPool, decimals)} ${String(rewardSymbol ?? 'RWD')}`,
+                description: `Pool: ${safeFormat(rewardPoolBalanceWei, decimals)} ${String(rewardSymbol ?? 'RWD')}\nReserved (unpaid): ${safeFormat(reservedUnpaidRewardsWei, decimals)} ${String(rewardSymbol ?? 'RWD')}\nWithdrawable: ${safeFormat(withdrawableRewardPool, decimals)} ${String(rewardSymbol ?? 'RWD')}`,
             })
             return
         }
@@ -792,11 +798,11 @@ export function StakingDashboard() {
                                         value={`${safeFormat(rewardPoolBalance as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
                                     />
                                     <InfoRow
-                                        label="Current Unpaid Rewards (est.)"
-                                        value={`${safeFormat(currentUnpaidRewards as bigint, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
+                                        label="Reserved (unpaid rewards)"
+                                        value={`${safeFormat(reservedUnpaidRewardsWei, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
                                     />
                                     <InfoRow
-                                        label="Current Withdrawable Reward Pool (est.)"
+                                        label="Withdrawable Reward Pool (est.)"
                                         value={`${safeFormat(withdrawableRewardPool, decimals)} ${String(rewardSymbol ?? 'RWD')}`}
                                     />
                                 </div>
