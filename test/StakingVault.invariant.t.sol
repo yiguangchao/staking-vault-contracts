@@ -140,6 +140,7 @@ contract StakingVaultInvariantTest is StdInvariant, Test {
     uint256 internal constant REWARD_FUND = 10_000 ether;
     uint256 internal constant REWARD_RATE = 1 ether;
     uint256 internal constant TOTAL_REWARD_MINTED = REWARD_FUND * 2;
+    uint256 internal constant TOTAL_STAKE_MINTED = INITIAL_USER_BALANCE * 3;
 
     function setUp() public {
         stakeToken = new BootcampToken(admin, 0);
@@ -204,6 +205,17 @@ contract StakingVaultInvariantTest is StdInvariant, Test {
             vault.rewardPoolBalance(),
             rewardToken.balanceOf(address(vault)),
             "reward pool view must match the actual reward token balance"
+        );
+    }
+
+    function invariant_StakeTokenBalancesRemainConserved() public view {
+        uint256 trackedStakeBalances = stakeToken.balanceOf(admin) + stakeToken.balanceOf(address(vault))
+            + stakeToken.balanceOf(alice) + stakeToken.balanceOf(bob) + stakeToken.balanceOf(carol);
+
+        assertEq(
+            trackedStakeBalances,
+            TOTAL_STAKE_MINTED,
+            "stake tokens should remain conserved across tracked addresses"
         );
     }
 }

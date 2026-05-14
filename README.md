@@ -102,7 +102,7 @@ Admin withdrawal flow:
 3. The vault transfers unused reward tokens back to the chosen recipient
 
 Why this matters:
-- The protocol now has a formal funding path instead of an implicit â€œsend tokens to the contractâ€?step
+- The protocol now has a formal funding path instead of an implicit "send tokens to the contract" step
 - Frontend validation can check admin reward-token balance and allowance before sending transactions
 - The reward-pool lifecycle is easier to explain, test, and operate
 
@@ -125,6 +125,7 @@ Current invariant coverage checks:
 
 - `totalStaked` must equal the sum of all tracked user staking balances
 - the vault stake-token balance must always cover `totalStaked`
+- stake-token balances remain conserved across tracked addresses
 - tracked reward-token balances must stay conserved across admin, users, and vault
 - `rewardPoolBalance()` must always match the vault's actual reward-token balance
 
@@ -406,8 +407,10 @@ Local environment used:
 GitHub Actions now runs:
 - `forge build`
 - `forge test -vv`
-- frontend dependency install
-- frontend lint
+- `forge test --match-path test/StakingVault.invariant.t.sol -vv`
+- indexer `pnpm typecheck` (after Prisma generate)
+- frontend `pnpm lint`
+- frontend `pnpm build`
 
 Workflow file:
 - [`.github/workflows/test.yml`](./.github/workflows/test.yml)
