@@ -213,9 +213,7 @@ contract StakingVaultInvariantTest is StdInvariant, Test {
             + stakeToken.balanceOf(alice) + stakeToken.balanceOf(bob) + stakeToken.balanceOf(carol);
 
         assertEq(
-            trackedStakeBalances,
-            TOTAL_STAKE_MINTED,
-            "stake tokens should remain conserved across tracked addresses"
+            trackedStakeBalances, TOTAL_STAKE_MINTED, "stake tokens should remain conserved across tracked addresses"
         );
     }
 }
