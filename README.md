@@ -186,6 +186,22 @@ cd app
 pnpm lint
 ```
 
+### Windows `pnpm build` fails with `EPERM` (unlink/rename/spawn)
+
+Some Windows environments (especially with real-time antivirus scanning enabled) can intermittently block Next.js from
+creating/removing build artifacts, causing errors like:
+
+- `EPERM: operation not permitted, unlink ...`
+- `EPERM: operation not permitted, rename ...`
+- `Error: spawn EPERM`
+
+What usually helps:
+
+- Stop any running `pnpm dev` / `next dev` processes before building.
+- Delete build output directories (`app/.next*`, `app/.next-ci-test*`) and retry.
+- Add a Defender/antivirus exclusion for the repo folder.
+- Run the build in WSL2 or on Linux/macOS (CI runs on Ubuntu and is typically stable).
+
 ### Indexer requests fail or hang
 
 The frontend now times out indexer requests after a short window and surfaces the failure message in the UI.
