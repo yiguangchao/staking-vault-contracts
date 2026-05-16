@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
+import { createRequire } from "node:module";
 
 const env = { ...process.env };
 
@@ -15,6 +16,9 @@ if (process.platform === "win32") {
 const isWindows = process.platform === "win32";
 const maxAttempts = isWindows ? 3 : 1;
 
+const require = createRequire(import.meta.url);
+const nextBin = require.resolve("next/dist/bin/next");
+
 for (let attempt = 1; attempt <= maxAttempts; attempt++) {
   // On Windows, Next can intermittently fail when overwriting build artifacts due to file locks.
   // Using a unique build directory per attempt avoids most unlink/rename failures.
@@ -22,10 +26,10 @@ for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     env.NEXT_BUILD_DIR = `.next-ci-test-${Date.now()}-${attempt}`;
   }
 
-  const result = spawnSync("next", args, {
+  // Use the Node entrypoint for Next.js to avoid PATH/shell issues on Windows.
+  const result = spawnSync(process.execPath, [nextBin, ...args], {
     stdio: "inherit",
     env,
-    shell: true,
   });
 
   if ((result.status ?? 1) === 0) {
