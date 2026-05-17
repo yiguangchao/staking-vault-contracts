@@ -93,6 +93,10 @@ jobs:
   app-lint:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      # Keep CI builds stable and cacheable (Next.js caches under distDir/cache).
+      NEXT_BUILD_DIR: .next
+      NEXT_TELEMETRY_DISABLED: "1"
 
     defaults:
       run:
@@ -116,6 +120,15 @@ jobs:
 
       - name: Install app dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            app/.next/cache
+          key: ${{ runner.os }}-next-${{ hashFiles('app/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-next-
 
       - name: Lint frontend
         run: pnpm lint

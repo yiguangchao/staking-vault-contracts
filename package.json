@@ -1,5 +1,9 @@
 {
   "scripts": {
+    "ci:contracts": "forge fmt --check && forge test -vv && forge test --match-path test/StakingVault.invariant.t.sol -vv",
+    "ci:app": "cd app && pnpm install --frozen-lockfile && pnpm lint && pnpm build",
+    "ci:indexer": "cd indexer && pnpm install --frozen-lockfile && pnpm prisma:generate && pnpm typecheck",
+    "ci:all": "npm run ci:contracts && npm run ci:indexer && npm run ci:app",
     "validate:env": "node tools/validate-env.mjs .env",
     "validate:env:example": "node tools/validate-env.mjs .env.example --allow-placeholders"
   },
