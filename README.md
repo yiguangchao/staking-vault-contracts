@@ -162,6 +162,12 @@ GitHub Actions currently runs:
 
 This keeps protocol changes and frontend integration changes validated together on every push and pull request.
 
+Local CI parity:
+
+```bash
+npm run ci:all
+```
+
 ## Troubleshooting
 
 ### Frontend shows wallet connection but write actions stay disabled
