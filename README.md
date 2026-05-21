@@ -440,10 +440,13 @@ Workflow file:
 ## Documentation Assets
 
 Useful diagrams and notes:
+- [`docs/README.md`](./docs/README.md)
 - [`docs/staking-flow-overview.svg`](./docs/staking-flow-overview.svg)
 - [`docs/admin-flow-overview.svg`](./docs/admin-flow-overview.svg)
 - [`docs/system-architecture-overview.svg`](./docs/system-architecture-overview.svg)
 - [`docs/page-button-guide.svg`](./docs/page-button-guide.svg)
+- [`docs/sepolia-deploy-verify.md`](./docs/sepolia-deploy-verify.md)
+- [`docs/reward-pool-runbook.md`](./docs/reward-pool-runbook.md)
 - [`docs/interview-qa.md`](./docs/interview-qa.md)
 - [`docs/remote-dapp-job-readiness.md`](./docs/remote-dapp-job-readiness.md)
 
