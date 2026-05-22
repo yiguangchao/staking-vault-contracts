@@ -118,6 +118,17 @@ contract StakingVault is AccessControl, Pausable, ReentrancyGuard {
         return availableRewards > reserve ? (availableRewards - reserve) : 0;
     }
 
+    /// @notice Returns the reward-pool values an admin UI needs in a single read.
+    function rewardPoolStatus()
+        external
+        view
+        returns (uint256 poolBalance, uint256 reservedRewards, uint256 withdrawableRewards)
+    {
+        poolBalance = rewardPoolBalance();
+        reservedRewards = currentUnpaidRewards();
+        withdrawableRewards = poolBalance > reservedRewards ? (poolBalance - reservedRewards) : 0;
+    }
+
     function fundRewardPool(uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
         if (amount == 0) revert ZeroAmount();
 

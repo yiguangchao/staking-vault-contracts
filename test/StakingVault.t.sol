@@ -183,6 +183,19 @@ contract StakingVaultTest is Test {
         assertEq(vault.withdrawableRewardPoolBalance(), REWARD_FUND - 10 ether);
     }
 
+    function test_RewardPoolStatusReturnsCurrentAdminView() public {
+        vm.prank(alice);
+        vault.stake(100 ether);
+
+        vm.warp(block.timestamp + 10);
+
+        (uint256 poolBalance, uint256 reservedRewards, uint256 withdrawableRewards) = vault.rewardPoolStatus();
+
+        assertEq(poolBalance, REWARD_FUND);
+        assertEq(reservedRewards, 10 ether);
+        assertEq(withdrawableRewards, REWARD_FUND - 10 ether);
+    }
+
     function test_WithdrawRewardPoolCannotStealAccruedUserRewards() public {
         vm.prank(alice);
         vault.stake(100 ether);
