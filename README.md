@@ -60,6 +60,7 @@ Core vault logic:
 - `setRewardRate(uint256 newRewardRate)`
 - `fundRewardPool(uint256 amount)`
 - `withdrawRewardPool(uint256 amount, address to)`
+- `rewardPoolStatus()`
 - `pause()` / `unpause()`
 
 Security modules used:
@@ -104,6 +105,7 @@ Admin withdrawal flow:
 Why this matters:
 - The protocol now has a formal funding path instead of an implicit "send tokens to the contract" step
 - Frontend validation can check admin reward-token balance and allowance before sending transactions
+- `rewardPoolStatus()` gives admin UIs the pool balance, reserved rewards, and withdrawable amount in one read
 - The reward-pool lifecycle is easier to explain, test, and operate
 
 ## Test Coverage
@@ -447,6 +449,7 @@ Useful diagrams and notes:
 - [`docs/page-button-guide.svg`](./docs/page-button-guide.svg)
 - [`docs/sepolia-deploy-verify.md`](./docs/sepolia-deploy-verify.md)
 - [`docs/reward-pool-runbook.md`](./docs/reward-pool-runbook.md)
+- [`docs/github-submission-checklist.md`](./docs/github-submission-checklist.md)
 - [`docs/interview-qa.md`](./docs/interview-qa.md)
 - [`docs/remote-dapp-job-readiness.md`](./docs/remote-dapp-job-readiness.md)
 
