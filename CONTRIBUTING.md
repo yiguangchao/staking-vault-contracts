@@ -32,10 +32,10 @@ pnpm dev
 ```
 
 6. Run the indexer (optional, for history panels):
+Start the API:
 ```bash
 cd indexer
 pnpm dev
-pnpm listener
 ```
 
 ## Local CI Parity

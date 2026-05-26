@@ -17,6 +17,7 @@ A staking contract with:
 - withdraw
 - claimRewards
 - setRewardRate
+- rewardPoolStatus
 - pause / unpause
 
 ## Reward Model
