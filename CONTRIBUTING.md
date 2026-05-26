@@ -20,6 +20,8 @@ cd ../indexer && pnpm install
 anvil
 ```
 
+Keep this terminal running while developing locally.
+
 4. Deploy contracts (new terminal):
 ```bash
 forge script script/Deploy.s.sol:DeployScript --rpc-url http://127.0.0.1:8545 --broadcast
@@ -32,11 +34,22 @@ pnpm dev
 ```
 
 6. Run the indexer (optional, for history panels):
+
 Start the API:
+
 ```bash
 cd indexer
 pnpm dev
 ```
+
+In another terminal, start the listener:
+
+```bash
+cd indexer
+pnpm listener
+```
+
+The frontend and indexer expect the local chain to stay available while they are running.
 
 ## Local CI Parity
 
@@ -55,4 +68,3 @@ npm run ci:app
 ## Notes For Windows
 
 On some Windows setups, Next.js build may intermittently fail with `EPERM` errors due to file locks (often antivirus / real-time scanning). See the Troubleshooting section in `README.md` for mitigation tips.
-
