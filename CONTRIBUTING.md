@@ -51,6 +51,8 @@ pnpm listener
 
 The frontend and indexer expect the local chain to stay available while they are running.
 
+For the smoothest local workflow, run the local chain, frontend, indexer API, and indexer listener in separate terminals.
+
 ## Local CI Parity
 
 From repo root:
