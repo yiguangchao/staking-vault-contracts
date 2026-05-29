@@ -3,7 +3,7 @@ import cors from "cors";
 import { prisma } from "./db";
 
 const app = express();
-const PORT = 4000;
+const PORT = Number(process.env.PORT ?? 4000) || 4000;
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
 const DEFAULT_OFFSET = 0;
