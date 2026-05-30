@@ -5,11 +5,13 @@ import {
   formatDateTime,
   formatTokenAmount,
   getIndexerHealth,
+  getIndexerStats,
   getRewardRateHistory,
   getUserEvents,
   shortHash,
   toIndexerErrorMessage,
   type IndexerEvent,
+  type IndexerStats,
   type RewardRateHistoryItem,
 } from "@/lib/indexer";
 
@@ -45,6 +47,28 @@ function SectionTitle({ title, subtitle }: { title: string; subtitle?: string })
     <div className="mb-4">
       <div className="text-base font-semibold text-white">{title}</div>
       {subtitle ? <div className="mt-1 text-sm text-zinc-400">{subtitle}</div> : null}
+    </div>
+  );
+}
+
+function formatCount(value?: number | string | null) {
+  if (value == null) return "-";
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return String(value);
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(parsed);
+}
+
+function StatPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/60 px-3 py-2">
+      <div className="text-[11px] uppercase text-zinc-500">{label}</div>
+      <div className="mt-1 text-sm font-medium text-zinc-100">{value}</div>
     </div>
   );
 }
@@ -87,6 +111,7 @@ export function HistoryPanel({
   const [loadingMoreHistory, setLoadingMoreHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [indexerHealthLabel, setIndexerHealthLabel] = useState<string>("Checking indexer...");
+  const [indexerStats, setIndexerStats] = useState<IndexerStats | null>(null);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
   const [refreshNonce, setRefreshNonce] = useState(0);
   const [hasMoreEvents, setHasMoreEvents] = useState(false);
@@ -104,6 +129,7 @@ export function HistoryPanel({
         setEvents([]);
         setRewardHistory([]);
         setError(null);
+        setIndexerStats(null);
         setHasMoreEvents(false);
         setHasMoreRewardHistory(false);
         setLastUpdatedAt(null);
@@ -115,20 +141,24 @@ export function HistoryPanel({
         setError(null);
         setIndexerHealthLabel("Checking indexer...");
 
-        const [userEvents, rateHistory, health] = await Promise.all([
+        const [userEvents, rateHistory, health, stats] = await Promise.all([
           getUserEvents(address, { limit: PAGE_SIZE, offset: 0 }),
           getRewardRateHistory({ limit: PAGE_SIZE, offset: 0 }),
           getIndexerHealth(),
+          getIndexerStats(),
         ]);
 
         if (!cancelled) {
           setEvents(userEvents);
           setRewardHistory(rateHistory);
+          setIndexerStats(stats);
           setHasMoreEvents(userEvents.length === PAGE_SIZE);
           setHasMoreRewardHistory(rateHistory.length === PAGE_SIZE);
           setIndexerHealthLabel(
             health.ok
-              ? `Indexer healthy - ${health.eventCount ?? 0} events - ${health.snapshotCount ?? 0} snapshots`
+              ? `Indexer healthy - ${formatCount(stats.eventCount ?? health.eventCount)} events - ${formatCount(
+                  stats.userCount ?? health.snapshotCount,
+                )} users`
               : "Indexer unavailable",
           );
           setLastUpdatedAt(new Date().toISOString());
@@ -245,6 +275,18 @@ export function HistoryPanel({
           >
             Retry
           </button>
+        </div>
+      ) : null}
+
+      {indexerStats ? (
+        <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatPill label="Events" value={formatCount(indexerStats.eventCount)} />
+          <StatPill label="Users" value={formatCount(indexerStats.userCount)} />
+          <StatPill label="Last Block" value={formatCount(indexerStats.lastSyncedBlock)} />
+          <StatPill
+            label="Latest"
+            value={indexerStats.latestEvent?.eventName ?? "-"}
+          />
         </div>
       ) : null}
 
