@@ -52,6 +52,17 @@ export type IndexerHealth = {
     serverTime?: string | null;
 };
 
+export type IndexerStats = {
+    eventCount?: number | string | null;
+    userCount?: number | string | null;
+    lastSyncedBlock?: number | string | null;
+    latestEvent?: IndexerEvent | null;
+    eventBreakdown?: Array<{
+        eventName?: string | null;
+        count?: number | string | null;
+    }>;
+};
+
 export type IndexerListOptions = {
     limit?: number;
     offset?: number;
@@ -189,6 +200,11 @@ export async function getRewardRateHistory(
 export async function getIndexerHealth(): Promise<IndexerHealth> {
     const data = await fetchJson<unknown>("/health");
     return normalizeOne<IndexerHealth>(data);
+}
+
+export async function getIndexerStats(): Promise<IndexerStats> {
+    const data = await fetchJson<unknown>("/stats");
+    return normalizeOne<IndexerStats>(data);
 }
 
 export function toIndexerErrorMessage(error: unknown): string {

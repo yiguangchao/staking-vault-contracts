@@ -78,6 +78,39 @@ app.get("/health", asyncRoute(async (_req, res) => {
   });
 }));
 
+app.get("/stats", asyncRoute(async (_req, res) => {
+  const [eventCount, userCount, indexedState, latestEvent, eventBreakdown] = await Promise.all([
+    prisma.vaultEvent.count(),
+    prisma.userPositionSnapshot.count(),
+    prisma.indexedState.findUnique({
+      where: { id: 1 },
+    }),
+    prisma.vaultEvent.findFirst({
+      orderBy: [{ blockNumber: "desc" }, { logIndex: "desc" }],
+    }),
+    prisma.vaultEvent.groupBy({
+      by: ["eventName"],
+      _count: {
+        eventName: true,
+      },
+      orderBy: {
+        eventName: "asc",
+      },
+    }),
+  ]);
+
+  return sendJson(res, {
+    eventCount,
+    userCount,
+    lastSyncedBlock: indexedState?.lastSyncedBlock ?? null,
+    latestEvent,
+    eventBreakdown: eventBreakdown.map((item) => ({
+      eventName: item.eventName,
+      count: item._count.eventName,
+    })),
+  });
+}));
+
 app.get("/events", asyncRoute(async (req, res) => {
   const limit = normalizeLimit(req.query.limit);
   const offset = normalizeOffset(req.query.offset);

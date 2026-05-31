@@ -42,6 +42,13 @@ cd indexer
 pnpm dev
 ```
 
+Quick API checks:
+
+```bash
+curl http://localhost:4000/health
+curl http://localhost:4000/stats
+```
+
 In another terminal, start the listener:
 
 ```bash
